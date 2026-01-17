@@ -6,14 +6,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   getAllUsersMonthlyStats,
   getAllUsersStatus,
 } from '@/server/punches'
@@ -82,142 +74,135 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="w-6 h-6" />
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
           Admin Dashboard
         </h1>
-        <p className="text-muted-foreground">Monitor student attendance and hours</p>
+        <p className="text-sm text-muted-foreground">Monitor attendance and hours</p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="py-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-emerald-600" />
+      {/* Stats Overview - Horizontal scroll on mobile */}
+      <div className="flex gap-3 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
+        <Card className="shrink-0 w-[140px] sm:w-auto">
+          <CardContent className="p-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
               </div>
               <div>
-                <div className="text-3xl font-bold">{clockedInUsers.length}</div>
-                <p className="text-sm text-muted-foreground">Currently In</p>
+                <div className="text-2xl sm:text-3xl font-bold">{clockedInUsers.length}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">Currently In</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="py-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
+        <Card className="shrink-0 w-[140px] sm:w-auto">
+          <CardContent className="p-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
               <div>
-                <div className="text-3xl font-bold">{usersStatus.length}</div>
-                <p className="text-sm text-muted-foreground">Total Students</p>
+                <div className="text-2xl sm:text-3xl font-bold">{usersStatus.length}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Students</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="py-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-purple-600" />
+        <Card className="shrink-0 w-[140px] sm:w-auto">
+          <CardContent className="p-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
               <div>
-                <div className="text-3xl font-bold">{formatHours(totalMonthHours)}</div>
-                <p className="text-sm text-muted-foreground">This Month</p>
+                <div className="text-2xl sm:text-3xl font-bold">{formatHours(totalMonthHours)}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">This Month</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Stats Table */}
+      {/* Monthly Stats */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Monthly Hours Report</CardTitle>
-              <CardDescription>Click on a student to see their breakdown</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => navigateMonth('prev')}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="min-w-[140px] text-center font-medium">
-                {formatMonth(selectedMonth)}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateMonth('next')}
-                disabled={selectedMonth === getCurrentMonth()}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+        <CardHeader className="pb-3 space-y-3">
+          {/* Month Navigation - Full width on mobile */}
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => navigateMonth('prev')}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="flex-1 text-center font-semibold">
+              {formatMonth(selectedMonth)}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => navigateMonth('next')}
+              disabled={selectedMonth === getCurrentMonth()}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground text-center">Tap a student for details</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {statsLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : monthlyStats.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground text-sm">
               No activity recorded for this month
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-right">Days</TableHead>
-                  <TableHead className="text-right">Avg/Day</TableHead>
-                  <TableHead className="text-right">Total Hours</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {monthlyStats.slice(0, 50).map((stat) => {
-                  const currentStatus = usersStatus.find((u) => u.userId === stat.userId)
-                  const isClockedIn = currentStatus?.isClockedIn ?? false
+            <div className="space-y-2">
+              {monthlyStats.slice(0, 50).map((stat) => {
+                const currentStatus = usersStatus.find((u) => u.userId === stat.userId)
+                const isClockedIn = currentStatus?.isClockedIn ?? false
 
-                  return (
-                    <TableRow
-                      key={stat.userId}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: '/admin/students/$userId', params: { userId: stat.userId } })}
-                    >
-                      <TableCell>
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
-                          }`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
+                return (
+                  <button
+                    key={stat.userId}
+                    type="button"
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors hover:bg-muted/50 ${
+                      isClockedIn ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''
+                    }`}
+                    onClick={() => navigate({ to: '/admin/students/$userId', params: { userId: stat.userId } })}
+                  >
+                    {/* Status dot */}
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
+                      }`}
+                    />
+                    
+                    {/* Name and email */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
                         {stat.userName || 'Unknown'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate hidden xs:block">
                         {stat.userEmail || '-'}
-                      </TableCell>
-                      <TableCell className="text-right">{stat.daysWorked}</TableCell>
-                      <TableCell className="text-right">
-                        {formatHours(stat.avgHoursPerDay)}
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
+                      </div>
+                    </div>
+                    
+                    {/* Stats */}
+                    <div className="text-right shrink-0">
+                      <div className="font-bold text-sm sm:text-base">
                         {formatHours(stat.totalHours)}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {stat.daysWorked}d · {formatHours(stat.avgHoursPerDay)}/d
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
     </div>
   )
 }
-

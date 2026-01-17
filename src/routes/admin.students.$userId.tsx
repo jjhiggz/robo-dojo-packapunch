@@ -24,14 +24,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   addPunch,
   deletePunch,
   deletePunches,
@@ -394,8 +386,8 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const handleSaveEdit = () => {
     if (!editingPunch) return
     const timestamp = combineDateAndTime(formData.date, formData.time)
-    updateMutation.mutate({
-      punchId: editingPunch.id,
+      updateMutation.mutate({
+        punchId: editingPunch.id,
       timestamp: timestamp.toISOString(),
       type: formData.type,
     })
@@ -426,136 +418,144 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Weekly Punches
-              </CardTitle>
-              <CardDescription>
-                {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                {' - '}
-                {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
+    <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3">
+            {/* Title and date range */}
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Weekly Punches
+        </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {' - '}
+                  {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </CardDescription>
+              </div>
               <div className="text-right">
-                <div className="text-2xl font-bold">{formatHours(totalWeekHours)}</div>
-                <div className="text-xs text-muted-foreground">total hours</div>
+                <div className="text-xl sm:text-2xl font-bold">{formatHours(totalWeekHours)}</div>
+                <div className="text-xs text-muted-foreground">total</div>
+              </div>
+            </div>
+            
+            {/* Actions row */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={isAllSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as HTMLButtonElement).dataset.state = isSomeSelected ? 'indeterminate' : isAllSelected ? 'checked' : 'unchecked'
+                    }
+                  }}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+                </span>
               </div>
               <Button onClick={handleOpenAddModal} size="sm">
-                <Plus className="w-4 h-4 mr-1" />
-                Add Punch
-              </Button>
-            </div>
+                <Plus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Add Punch</span>
+                            </Button>
+                          </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {/* Bulk actions bar */}
           {selectedIds.size > 0 && (
-            <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedIds.size} punch{selectedIds.size > 1 ? 'es' : ''} selected
-              </span>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={clearSelection}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={bulkDeleteMutation.isPending}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete Selected'}
-                </Button>
-              </div>
-            </div>
+            <div className="mb-3 p-2 sm:p-3 bg-muted rounded-lg flex items-center justify-between gap-2">
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="text-xs sm:text-sm">
+                Cancel
+                            </Button>
+                            <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={bulkDeleteMutation.isPending}
+                className="text-xs sm:text-sm"
+              >
+                <Trash2 className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">{bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}</span>
+                            </Button>
+                          </div>
           )}
 
           {punches.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground text-sm">
               No punches recorded this week
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={isAllSelected}
-                      ref={(el) => {
-                        if (el) {
-                          (el as HTMLButtonElement).dataset.state = isSomeSelected ? 'indeterminate' : isAllSelected ? 'checked' : 'unchecked'
-                        }
-                      }}
-                      onCheckedChange={toggleSelectAll}
-                      aria-label="Select all"
-                    />
-                  </TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="w-[50px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {punches.map((punch) => (
-                  <TableRow
-                    key={punch.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(punch.id) ? 'bg-muted/30' : ''}`}
+                          </div>
+                        ) : (
+            <div className="space-y-2">
+              {punches.map((punch) => (
+                <div
+                  key={punch.id}
+                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors ${
+                    selectedIds.has(punch.id) 
+                      ? 'bg-muted' 
+                      : punch.type === 'in'
+                        ? 'bg-green-50 dark:bg-green-950/20'
+                        : 'bg-red-50 dark:bg-red-950/20'
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <Checkbox
+                    checked={selectedIds.has(punch.id)}
+                    onCheckedChange={() => toggleSelect(punch.id)}
+                    aria-label={`Select punch from ${formatDate(punch.timestamp)}`}
+                    className="shrink-0"
+                  />
+                  
+                  {/* Main content - clickable */}
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 text-left"
                     onClick={() => handleOpenEditModal(punch)}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedIds.has(punch.id)}
-                        onCheckedChange={() => toggleSelect(punch.id)}
-                        aria-label={`Select punch from ${formatDate(punch.timestamp)}`}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {formatDate(punch.timestamp)}
-                    </TableCell>
-                    <TableCell>{formatTime(punch.timestamp)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                          punch.type === 'in'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}
-                      >
-                        {punch.type === 'in' ? (
-                          <LogIn className="w-3 h-3" />
-                        ) : (
-                          <LogOut className="w-3 h-3" />
-                        )}
-                        {punch.type === 'in' ? 'In' : 'Out'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(punch.id)
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                    {/* Type icon */}
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        punch.type === 'in'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400'
+                          : 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
+                      }`}
+                    >
+                      {punch.type === 'in' ? (
+                        <LogIn className="w-4 h-4" />
+                      ) : (
+                        <LogOut className="w-4 h-4" />
+                      )}
+                    </div>
+                    
+                    {/* Date and time */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {formatDate(punch.timestamp)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatTime(punch.timestamp)}
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Delete button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(punch.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+              ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
 
       {/* Add Punch Modal */}
       <PunchModal
@@ -647,36 +647,34 @@ function StudentDetailPage() {
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" asChild>
+      <div className="flex items-center gap-3 mb-4">
+        <Button variant="ghost" size="icon" className="shrink-0" asChild>
           <Link to="/admin">
             <ArrowLeft className="w-5 h-5" />
           </Link>
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold truncate">
             {studentInfo?.userName || 'Unknown Student'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">
             {studentInfo?.userEmail || userId}
           </p>
         </div>
       </div>
 
       {/* Week Navigation */}
-      <Card className="mb-6">
-        <CardContent className="py-4">
+      <Card className="mb-4">
+        <CardContent className="py-3">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigateWeek('prev')}>
-              <ChevronLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('prev')}>
+              <ChevronLeft className="w-4 h-4" />
             </Button>
-            <div className="text-center">
-              <Button variant="link" size="sm" onClick={goToCurrentWeek}>
-                Go to current week
+            <Button variant="link" size="sm" className="text-xs sm:text-sm" onClick={goToCurrentWeek}>
+              Current week
               </Button>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => navigateWeek('next')}>
-              <ChevronRight className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('next')}>
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </CardContent>
