@@ -1,6 +1,6 @@
 import { useUser } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Calendar, ChevronLeft, ChevronRight, Clock, Shield, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -140,35 +140,6 @@ function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Currently Clocked In */}
-      {clockedInUsers.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              Currently Clocked In
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {clockedInUsers.slice(0, 50).map((u) => (
-                <Link
-                  key={u.userId}
-                  to="/admin/students/$userId"
-                  params={{ userId: u.userId }}
-                  className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition-colors"
-                >
-                  {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
-                  <span className="ml-2 text-emerald-600">
-                    since {formatTime(u.lastPunchTime)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Monthly Stats Table */}
       <Card>
