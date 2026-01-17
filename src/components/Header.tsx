@@ -4,7 +4,14 @@ import { Shield, Zap } from 'lucide-react'
 import ClerkHeader from '../integrations/clerk/header-user.tsx'
 
 // Admin email addresses - keep in sync with admin.tsx
-const ADMIN_EMAILS = ['jonathan.higger@gmail.com']
+const ADMIN_EMAILS = [
+  'jonathan.higger@gmail.com',
+  'aionfork@gmail.com',
+  'armstrong.dan237@gmail.com',
+  'tarheelwinetraders@gmail.com',
+  'janyoumd@gmail.com',
+  'semoyer@vt.edu'
+]
 
 export default function Header() {
   const { user, isSignedIn } = useUser()

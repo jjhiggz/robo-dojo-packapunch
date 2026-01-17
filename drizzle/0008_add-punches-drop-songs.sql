@@ -11,3 +11,4 @@ CREATE TABLE IF NOT EXISTS "punches" (
   "timestamp" timestamp DEFAULT now() NOT NULL
 );
 
+
