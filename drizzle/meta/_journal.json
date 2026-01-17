@@ -57,6 +57,13 @@
       "when": 1766300000000,
       "tag": "0007_fix-banana-stickers-type",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768611600000,
+      "tag": "0008_add-punches-drop-songs",
+      "breakpoints": true
     }
   ]
 }
