@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  /* Custom breakpoint for extra small screens */
+  --breakpoint-xs: 400px;
+  
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(222.2 84% 4.9%);
   --color-card: hsl(0 0% 100%);
