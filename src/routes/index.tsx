@@ -112,7 +112,10 @@ function PunchBoardTable() {
           <TableBody>
             {/* Current user row - always shown first with punch button */}
             {user && (
-              <TableRow className="bg-primary/5 hover:bg-primary/10">
+              <TableRow 
+                className="bg-primary/5 hover:bg-primary/10 cursor-pointer"
+                onClick={() => navigate({ to: `/students/${user.id}` })}
+              >
                 <TableCell>
                   <div
                     className={`w-4 h-4 rounded-full ${
@@ -121,7 +124,9 @@ function PunchBoardTable() {
                   />
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || 'You'}
+                  <span className="text-primary hover:underline">
+                    {user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || 'You'}
+                  </span>
                   <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
@@ -129,7 +134,7 @@ function PunchBoardTable() {
                     ? formatTime(currentUserStatus.lastPunchTime)
                     : '—'}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant={isClockedIn ? 'destructive' : 'default'}
@@ -161,13 +166,8 @@ function PunchBoardTable() {
               .map((u) => (
                 <TableRow 
                   key={u.userId}
-                  className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => {
-                    const targetRoute = isAdmin 
-                      ? `/admin/students/${u.userId}` 
-                      : `/students/${u.userId}`
-                    navigate({ to: targetRoute })
-                  }}
+                  className={isAdmin ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  onClick={isAdmin ? () => navigate({ to: `/admin/students/${u.userId}` }) : undefined}
                 >
                   <TableCell>
                     <div
@@ -176,7 +176,7 @@ function PunchBoardTable() {
                       }`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-primary hover:underline">
+                  <TableCell className={`font-medium ${isAdmin ? 'text-primary hover:underline' : ''}`}>
                     {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">

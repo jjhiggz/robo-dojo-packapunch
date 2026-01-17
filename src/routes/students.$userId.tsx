@@ -179,12 +179,15 @@ function WeeklyPunchCard({ userId, weekStart }: { userId: string; weekStart: Dat
 }
 
 function StudentProfilePage() {
-  const { isSignedIn, isLoaded } = useUser()
+  const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
   const [currentWeek, setCurrentWeek] = useState(new Date())
 
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
+
+  // Users can only view their own profile
+  const isOwnProfile = user?.id === userId
 
   // Get student info from a punch record
   const { data: recentPunches = [] } = useQuery({
@@ -222,6 +225,12 @@ function StudentProfilePage() {
 
   if (!isSignedIn) {
     navigate({ to: '/login' })
+    return null
+  }
+
+  // Redirect if trying to view someone else's profile
+  if (!isOwnProfile) {
+    navigate({ to: '/' })
     return null
   }
 
