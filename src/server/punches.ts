@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { db } from '@/db'
 import { punches } from '@/db/schema'
-import { eq, desc, and, gte, lte, sql } from 'drizzle-orm'
+import { eq, desc, and, gte, lte } from 'drizzle-orm'
 
 // Get the current punch status for a user (are they clocked in or out?)
 export const getPunchStatus = createServerFn({ method: 'POST' })

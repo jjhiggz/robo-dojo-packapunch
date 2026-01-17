@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getPunchHistory, getWeeklySummary, calculateHoursFromPunches } from '@/server/punches'
+import { calculateHoursFromPunches, getPunchHistory, getWeeklySummary } from '@/server/punches'
 
 export const Route = createFileRoute('/history')({
   component: HistoryPage,
@@ -218,7 +218,7 @@ function HistoryPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between gap-2 h-32">
-              {weeklySummary.map((day, i) => {
+              {weeklySummary.map((day ) => {
                 const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })
                 const maxHours = Math.max(...weeklySummary.map(d => d.hours), 1)
                 const heightPercent = (day.hours / maxHours) * 100

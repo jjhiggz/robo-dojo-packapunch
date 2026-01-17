@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, Edit2, Plus, Save, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Edit2, Plus, Save, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,11 +14,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  getPunchHistory,
-  updatePunch,
-  deletePunch,
   addPunch,
   calculateHoursFromPunches,
+  deletePunch,
+  getPunchHistory,
+  updatePunch,
 } from '@/server/punches'
 import { ADMIN_EMAILS } from './admin'
 
@@ -26,7 +26,8 @@ export const Route = createFileRoute('/admin/students/$userId')({
   component: StudentDetailPage,
 })
 
-const formatTime = (date: Date | string) => {
+const formatTime = (date: Date | string | null | undefined) => {
+  if (!date) return '—'
   return new Date(date).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -34,15 +35,8 @@ const formatTime = (date: Date | string) => {
   })
 }
 
-const formatDate = (date: Date | string) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-const formatDateTimeLocal = (date: Date | string) => {
+const formatDateTimeLocal = (date: Date | string | null | undefined) => {
+  if (!date) return ''
   const d = new Date(date)
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -394,7 +388,7 @@ function StudentDetailPage() {
     select: (data) => data.slice(0, 1), // Just get the most recent one for name/email
   })
 
-  const studentInfo = recentPunches[0] || { userName: null, userEmail: null }
+  const studentInfo = recentPunches?.[0] || { userName: null, userEmail: null }
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(currentWeek)

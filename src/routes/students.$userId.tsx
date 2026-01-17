@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getPunchHistory, calculateHoursFromPunches } from '@/server/punches'
+import { calculateHoursFromPunches, getPunchHistory } from '@/server/punches'
 
 export const Route = createFileRoute('/students/$userId')({
   component: StudentProfilePage,
@@ -179,7 +179,7 @@ function WeeklyPunchCard({ userId, weekStart }: { userId: string; weekStart: Dat
 }
 
 function StudentProfilePage() {
-  const { user, isSignedIn, isLoaded } = useUser()
+  const { isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
   const [currentWeek, setCurrentWeek] = useState(new Date())
@@ -200,7 +200,7 @@ function StudentProfilePage() {
     select: (data) => data.slice(0, 1), // Just get the most recent one for name/email
   })
 
-  const studentInfo = recentPunches[0] || { userName: null, userEmail: null }
+  const studentInfo = recentPunches?.[0] || { userName: null, userEmail: null }
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(currentWeek)
