@@ -1,10 +1,27 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Edit2, Plus, Save, Trash2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, LogIn, LogOut, Plus, Trash2 } from 'lucide-react'
+import { useId, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -26,7 +43,7 @@ export const Route = createFileRoute('/admin/students/$userId')({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Types - Punches come over the wire with string timestamps (JSON serialization)
+// Types
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface SerializedPunch {
@@ -47,8 +64,14 @@ interface NormalizedPunch {
   timestamp: Date
 }
 
+interface PunchFormData {
+  date: string
+  time: string
+  type: 'in' | 'out'
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Pure utility functions
+// Utility functions
 // ─────────────────────────────────────────────────────────────────────────────
 
 const toDate = (value: string | Date): Date =>
@@ -63,17 +86,19 @@ const normalizePunch = (punch: SerializedPunch): NormalizedPunch => ({
 const normalizePunches = (punches: SerializedPunch[]): NormalizedPunch[] =>
   punches.map(normalizePunch)
 
+const formatDate = (date: Date): string =>
+  date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+
 const formatTime = (date: Date): string =>
   date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   })
-
-const formatDateTimeLocal = (date: Date): string => {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 const formatHours = (hours: number): string => {
   const h = Math.floor(hours)
@@ -98,14 +123,19 @@ const getWeekEnd = (weekStart: Date): Date => {
   return end
 }
 
-const getWeekDays = (weekStart: Date): Date[] =>
-  Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(weekStart)
-    day.setDate(day.getDate() + i)
-    return day
-  })
+const pad = (n: number): string => String(n).padStart(2, '0')
 
-const getDateKey = (date: Date): string => date.toISOString().split('T')[0]
+const toDateInputValue = (date: Date): string =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+
+const toTimeInputValue = (date: Date): string =>
+  `${pad(date.getHours())}:${pad(date.getMinutes())}`
+
+const combineDateAndTime = (dateStr: string, timeStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return new Date(year, month - 1, day, hours, minutes)
+}
 
 const calculateHoursFromPunches = (punches: NormalizedPunch[]): number => {
   const sorted = [...punches].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
@@ -122,7 +152,6 @@ const calculateHoursFromPunches = (punches: NormalizedPunch[]): number => {
     }
   }
 
-  // If still clocked in, count time until now
   if (lastIn) {
     totalMs += Date.now() - lastIn.getTime()
   }
@@ -130,115 +159,133 @@ const calculateHoursFromPunches = (punches: NormalizedPunch[]): number => {
   return totalMs / (1000 * 60 * 60)
 }
 
-const groupPunchesByDay = (
-  punches: NormalizedPunch[],
-  weekDays: Date[]
-): Map<string, NormalizedPunch[]> => {
-  const grouped = new Map<string, NormalizedPunch[]>()
-  
-  // Initialize all days
-  for (const day of weekDays) {
-    grouped.set(getDateKey(day), [])
+const getDefaultFormData = (): PunchFormData => {
+  const now = new Date()
+  return {
+    date: toDateInputValue(now),
+    time: toTimeInputValue(now),
+    type: 'in',
   }
-  
-  // Group punches
-  for (const punch of punches) {
-    const dateKey = getDateKey(punch.timestamp)
-    const dayPunches = grouped.get(dateKey)
-    if (dayPunches) {
-      dayPunches.push(punch)
-    }
-  }
-  
-  return grouped
 }
 
+const punchToFormData = (punch: NormalizedPunch): PunchFormData => ({
+  date: toDateInputValue(punch.timestamp),
+  time: toTimeInputValue(punch.timestamp),
+  type: punch.type,
+})
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Components
+// Punch Modal Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface PunchCellProps {
-  punch: NormalizedPunch | undefined
-  isEditing: boolean
-  editValue: string
-  onEditChange: (value: string) => void
-  onStartEdit: () => void
+interface PunchModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  formData: PunchFormData
+  onFormChange: (data: PunchFormData) => void
   onSave: () => void
-  onCancel: () => void
-  onDelete: () => void
+  isSaving: boolean
 }
 
-const PunchCell = ({
-  punch,
-  isEditing,
-  editValue,
-  onEditChange,
-  onStartEdit,
+const PunchModal = ({
+  open,
+  onOpenChange,
+  title,
+  description,
+  formData,
+  onFormChange,
   onSave,
-  onCancel,
-  onDelete,
-}: PunchCellProps) => {
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1">
-        <input
-          type="datetime-local"
-          value={editValue}
-          onChange={(e) => onEditChange(e.target.value)}
-          className="text-xs px-1 py-0.5 border rounded"
-        />
-        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onSave}>
-          <Save className="w-3 h-3" />
-        </Button>
-        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel}>
-          <X className="w-3 h-3" />
-        </Button>
-      </div>
-    )
-  }
-
-  if (!punch) {
-    return <span className="text-muted-foreground">—</span>
-  }
+  isSaving,
+}: PunchModalProps) => {
+  const dateId = useId()
+  const timeId = useId()
+  const typeId = useId()
 
   return (
-    <div className="flex items-center gap-1 group">
-      <span className="text-sm">{formatTime(punch.timestamp)}</span>
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100"
-        onClick={onStartEdit}
-      >
-        <Edit2 className="w-3 h-3" />
-      </Button>
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-        onClick={onDelete}
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor={dateId}>Date</Label>
+            <Input
+              id={dateId}
+              type="date"
+              value={formData.date}
+              onChange={(e) => onFormChange({ ...formData, date: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={timeId}>Time</Label>
+            <Input
+              id={timeId}
+              type="time"
+              value={formData.time}
+              onChange={(e) => onFormChange({ ...formData, time: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={typeId}>Type</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value: 'in' | 'out') => onFormChange({ ...formData, type: value })}
+            >
+              <SelectTrigger id={typeId}>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in">
+                  <span className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4 text-green-600" />
+                    Punch In
+                  </span>
+                </SelectItem>
+                <SelectItem value="out">
+                  <span className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4 text-red-600" />
+                    Punch Out
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-interface WeeklyPunchCardProps {
+// ─────────────────────────────────────────────────────────────────────────────
+// Weekly Punch List Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface WeeklyPunchListProps {
   userId: string
   userName: string | null
   userEmail: string | null
   weekStart: Date
 }
 
-const WeeklyPunchCard = ({ userId, userName, userEmail, weekStart }: WeeklyPunchCardProps) => {
+const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunchListProps) => {
   const queryClient = useQueryClient()
-  const [editingPunch, setEditingPunch] = useState<{ id: number; timestamp: string } | null>(null)
-  const [addingPunch, setAddingPunch] = useState<{ date: string; type: 'in' | 'out' } | null>(null)
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editingPunch, setEditingPunch] = useState<NormalizedPunch | null>(null)
+  const [formData, setFormData] = useState<PunchFormData>(getDefaultFormData)
 
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart])
-  const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart])
-  const todayKey = getDateKey(new Date())
 
   const { data: punches = [], isLoading } = useQuery({
     queryKey: ['punchHistory', userId, weekStart.toISOString(), weekEnd.toISOString()],
@@ -250,27 +297,10 @@ const WeeklyPunchCard = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
           endDate: weekEnd.toISOString(),
         },
       }),
-    select: normalizePunches,
+    select: (data) => normalizePunches(data).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
   })
 
-  const punchesByDay = useMemo(() => groupPunchesByDay(punches, weekDays), [punches, weekDays])
   const totalWeekHours = useMemo(() => calculateHoursFromPunches(punches), [punches])
-
-  const updateMutation = useMutation({
-    mutationFn: ({ punchId, timestamp }: { punchId: number; timestamp: string }) =>
-      updatePunch({ data: { punchId, timestamp } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
-      setEditingPunch(null)
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (punchId: number) => deletePunch({ data: punchId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
-    },
-  })
 
   const addMutation = useMutation({
     mutationFn: ({ type, timestamp }: { type: 'in' | 'out'; timestamp: string }) =>
@@ -285,29 +315,56 @@ const WeeklyPunchCard = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
-      setAddingPunch(null)
+      setAddModalOpen(false)
+      setFormData(getDefaultFormData())
     },
   })
 
-  const handleSaveEdit = () => {
-    if (editingPunch) {
-      updateMutation.mutate({
-        punchId: editingPunch.id,
-        timestamp: editingPunch.timestamp,
-      })
-    }
+  const updateMutation = useMutation({
+    mutationFn: ({ punchId, timestamp, type }: { punchId: number; timestamp: string; type: 'in' | 'out' }) =>
+      updatePunch({ data: { punchId, timestamp, type } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      setEditingPunch(null)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (punchId: number) => deletePunch({ data: punchId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+    },
+  })
+
+  const handleOpenAddModal = () => {
+    setFormData(getDefaultFormData())
+    setAddModalOpen(true)
+  }
+
+  const handleOpenEditModal = (punch: NormalizedPunch) => {
+    setFormData(punchToFormData(punch))
+    setEditingPunch(punch)
   }
 
   const handleSaveAdd = () => {
-    if (addingPunch) {
-      addMutation.mutate({
-        type: addingPunch.type,
-        timestamp: new Date(addingPunch.date).toISOString(),
-      })
-    }
+    const timestamp = combineDateAndTime(formData.date, formData.time)
+    addMutation.mutate({
+      type: formData.type,
+      timestamp: timestamp.toISOString(),
+    })
   }
 
-  const handleDeletePunch = (punchId: number) => {
+  const handleSaveEdit = () => {
+    if (!editingPunch) return
+    const timestamp = combineDateAndTime(formData.date, formData.time)
+      updateMutation.mutate({
+        punchId: editingPunch.id,
+      timestamp: timestamp.toISOString(),
+      type: formData.type,
+    })
+  }
+
+  const handleDelete = (punchId: number) => {
     if (confirm('Delete this punch?')) {
       deleteMutation.mutate(punchId)
     }
@@ -317,138 +374,127 @@ const WeeklyPunchCard = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
-          Loading punch card...
+          Loading punches...
         </CardContent>
       </Card>
     )
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Weekly Punch Card
-          </span>
-          <span className="text-2xl">{formatHours(totalWeekHours)}</span>
+                Weekly Punches
         </CardTitle>
         <CardDescription>
-          {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           {' - '}
-          {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Day</TableHead>
-              <TableHead>In</TableHead>
-              <TableHead>Out</TableHead>
-              <TableHead>In</TableHead>
-              <TableHead>Out</TableHead>
-              <TableHead className="text-right">Hours</TableHead>
-              <TableHead className="w-[80px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {weekDays.map((day) => {
-              const dateKey = getDateKey(day)
-              const dayPunches = punchesByDay.get(dateKey) ?? []
-              const sortedPunches = [...dayPunches].sort(
-                (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-              )
-              const dayHours = calculateHoursFromPunches(dayPunches)
-              const isToday = dateKey === todayKey
-
-              return (
-                <TableRow key={dateKey} className={isToday ? 'bg-primary/5' : ''}>
-                  <TableCell className="font-medium">
-                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
-                    {isToday && <span className="ml-1 text-xs text-primary">(today)</span>}
-                  </TableCell>
-                  {[0, 1, 2, 3].map((idx) => {
-                    const punch = sortedPunches[idx]
-                    const isEditing = editingPunch?.id === punch?.id
-
-                    return (
-                      <TableCell key={idx}>
-                        <PunchCell
-                          punch={punch}
-                          isEditing={isEditing}
-                          editValue={editingPunch?.timestamp ?? ''}
-                          onEditChange={(value) =>
-                            setEditingPunch((prev) => (prev ? { ...prev, timestamp: value } : null))
-                          }
-                          onStartEdit={() =>
-                            punch &&
-                            setEditingPunch({
-                              id: punch.id,
-                              timestamp: formatDateTimeLocal(punch.timestamp),
-                            })
-                          }
-                          onSave={handleSaveEdit}
-                          onCancel={() => setEditingPunch(null)}
-                          onDelete={() => punch && handleDeletePunch(punch.id)}
-                        />
-                      </TableCell>
-                    )
-                  })}
-                  <TableCell className="text-right font-medium">
-                    {dayHours > 0 ? formatHours(dayHours) : '—'}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={() => setAddingPunch({ date: dateKey, type: 'in' })}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-            <TableRow className="font-bold bg-muted/50">
-              <TableCell colSpan={5}>Total</TableCell>
-              <TableCell className="text-right">{formatHours(totalWeekHours)}</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableBody>
-        </Table>
-
-        {/* Add Punch Dialog */}
-        {addingPunch && (
-          <div className="mt-4 p-4 border rounded-lg bg-muted/50">
-            <h3 className="font-semibold mb-2">Add Punch</h3>
-            <div className="flex items-center gap-2">
-              <input
-                type="datetime-local"
-                value={addingPunch.date.includes('T') ? addingPunch.date : `${addingPunch.date}T09:00`}
-                onChange={(e) => setAddingPunch({ ...addingPunch, date: e.target.value })}
-                className="px-2 py-1 border rounded"
-              />
-              <select
-                value={addingPunch.type}
-                onChange={(e) => setAddingPunch({ ...addingPunch, type: e.target.value as 'in' | 'out' })}
-                className="px-2 py-1 border rounded"
-              >
-                <option value="in">In</option>
-                <option value="out">Out</option>
-              </select>
-              <Button size="sm" onClick={handleSaveAdd}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setAddingPunch(null)}>
-                Cancel
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-2xl font-bold">{formatHours(totalWeekHours)}</div>
+                <div className="text-xs text-muted-foreground">total hours</div>
+              </div>
+              <Button onClick={handleOpenAddModal} size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Add Punch
               </Button>
             </div>
           </div>
+      </CardHeader>
+      <CardContent>
+          {punches.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              No punches recorded this week
+            </div>
+          ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="w-[100px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+                {punches.map((punch) => (
+                  <TableRow
+                    key={punch.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleOpenEditModal(punch)}
+                  >
+                  <TableCell className="font-medium">
+                      {formatDate(punch.timestamp)}
+                  </TableCell>
+                    <TableCell>{formatTime(punch.timestamp)}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                          punch.type === 'in'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        }`}
+                      >
+                        {punch.type === 'in' ? (
+                          <LogIn className="w-3 h-3" />
+                        ) : (
+                          <LogOut className="w-3 h-3" />
+                        )}
+                        {punch.type === 'in' ? 'In' : 'Out'}
+                      </span>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                        variant="ghost"
+                      size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(punch.id)
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                ))}
+          </TableBody>
+        </Table>
         )}
       </CardContent>
     </Card>
+
+      {/* Add Punch Modal */}
+      <PunchModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        title="Add Punch"
+        description="Add a new punch entry for this student."
+        formData={formData}
+        onFormChange={setFormData}
+        onSave={handleSaveAdd}
+        isSaving={addMutation.isPending}
+      />
+
+      {/* Edit Punch Modal */}
+      <PunchModal
+        open={editingPunch !== null}
+        onOpenChange={(open) => !open && setEditingPunch(null)}
+        title="Edit Punch"
+        description="Modify the date, time, or type of this punch."
+        formData={formData}
+        onFormChange={setFormData}
+        onSave={handleSaveEdit}
+        isSaving={updateMutation.isPending}
+      />
+    </>
   )
 }
 
@@ -466,7 +512,6 @@ function StudentDetailPage() {
   const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
 
-  // Fetch student info from their punch history
   const { data: studentInfo } = useQuery({
     queryKey: ['studentInfo', userId],
     queryFn: () =>
@@ -551,8 +596,8 @@ function StudentDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Weekly Punch Card */}
-      <WeeklyPunchCard
+      {/* Weekly Punch List */}
+      <WeeklyPunchList
         userId={userId}
         userName={studentInfo?.userName ?? null}
         userEmail={studentInfo?.userEmail ?? null}

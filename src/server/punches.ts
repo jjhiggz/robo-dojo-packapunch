@@ -339,13 +339,16 @@ export const getUserMonthlyBreakdown = createServerFn({ method: 'POST' })
     return weeklyBreakdown
   })
 
-// Admin: Update a punch record's timestamp
+// Admin: Update a punch record's timestamp and/or type
 export const updatePunch = createServerFn({ method: 'POST' })
-  .inputValidator((data: { punchId: number; timestamp: string }) => data)
+  .inputValidator((data: { punchId: number; timestamp: string; type?: 'in' | 'out' }) => data)
   .handler(async ({ data }) => {
     const [updated] = await db
       .update(punches)
-      .set({ timestamp: new Date(data.timestamp) })
+      .set({
+        timestamp: new Date(data.timestamp),
+        ...(data.type && { type: data.type }),
+      })
       .where(eq(punches.id, data.punchId))
       .returning()
 
