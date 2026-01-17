@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, LogIn, LogOut, Plus, Tr
 import { useId, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import {
 import {
   addPunch,
   deletePunch,
+  deletePunches,
   getPunchHistory,
   updatePunch,
 } from '@/server/punches'
@@ -284,6 +286,7 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editingPunch, setEditingPunch] = useState<NormalizedPunch | null>(null)
   const [formData, setFormData] = useState<PunchFormData>(getDefaultFormData)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart])
 
@@ -301,6 +304,32 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   })
 
   const totalWeekHours = useMemo(() => calculateHoursFromPunches(punches), [punches])
+
+  // Selection helpers
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === punches.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(punches.map((p) => p.id)))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const isAllSelected = punches.length > 0 && selectedIds.size === punches.length
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < punches.length
 
   const addMutation = useMutation({
     mutationFn: ({ type, timestamp }: { type: 'in' | 'out'; timestamp: string }) =>
@@ -336,6 +365,14 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
     },
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => deletePunches({ data: ids }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      clearSelection()
+    },
+  })
+
   const handleOpenAddModal = () => {
     setFormData(getDefaultFormData())
     setAddModalOpen(true)
@@ -357,8 +394,8 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const handleSaveEdit = () => {
     if (!editingPunch) return
     const timestamp = combineDateAndTime(formData.date, formData.time)
-      updateMutation.mutate({
-        punchId: editingPunch.id,
+    updateMutation.mutate({
+      punchId: editingPunch.id,
       timestamp: timestamp.toISOString(),
       type: formData.type,
     })
@@ -367,6 +404,13 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const handleDelete = (punchId: number) => {
     if (confirm('Delete this punch?')) {
       deleteMutation.mutate(punchId)
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return
+    if (confirm(`Delete ${selectedIds.size} punch${selectedIds.size > 1 ? 'es' : ''}?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedIds))
     }
   }
 
@@ -382,19 +426,19 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
 
   return (
     <>
-    <Card>
-      <CardHeader>
+      <Card>
+        <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
+                <Calendar className="w-5 h-5" />
                 Weekly Punches
-        </CardTitle>
-        <CardDescription>
+              </CardTitle>
+              <CardDescription>
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          {' - '}
+                {' - '}
                 {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </CardDescription>
+              </CardDescription>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -407,32 +451,74 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
               </Button>
             </div>
           </div>
-      </CardHeader>
-      <CardContent>
+        </CardHeader>
+        <CardContent>
+          {/* Bulk actions bar */}
+          {selectedIds.size > 0 && (
+            <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedIds.size} punch{selectedIds.size > 1 ? 'es' : ''} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleteMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete Selected'}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {punches.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               No punches recorded this week
             </div>
           ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) {
+                          (el as HTMLButtonElement).dataset.state = isSomeSelected ? 'indeterminate' : isAllSelected ? 'checked' : 'unchecked'
+                        }
+                      }}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead className="w-[100px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+                  <TableHead className="w-[50px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {punches.map((punch) => (
                   <TableRow
                     key={punch.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(punch.id) ? 'bg-muted/30' : ''}`}
                     onClick={() => handleOpenEditModal(punch)}
                   >
-                  <TableCell className="font-medium">
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(punch.id)}
+                        onCheckedChange={() => toggleSelect(punch.id)}
+                        aria-label={`Select punch from ${formatDate(punch.timestamp)}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
                       {formatDate(punch.timestamp)}
-                  </TableCell>
+                    </TableCell>
                     <TableCell>{formatTime(punch.timestamp)}</TableCell>
                     <TableCell>
                       <span
@@ -449,11 +535,11 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                         )}
                         {punch.type === 'in' ? 'In' : 'Out'}
                       </span>
-                  </TableCell>
-                  <TableCell>
-                    <Button
+                    </TableCell>
+                    <TableCell>
+                      <Button
                         variant="ghost"
-                      size="icon"
+                        size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -461,15 +547,15 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-          </TableBody>
-        </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Add Punch Modal */}
       <PunchModal

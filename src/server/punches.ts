@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm'
 import { db } from '@/db'
 import { punches } from '@/db/schema'
-import { eq, desc, and, gte, lte } from 'drizzle-orm'
 
 // Get the current punch status for a user (are they clocked in or out?)
 export const getPunchStatus = createServerFn({ method: 'POST' })
@@ -361,6 +361,15 @@ export const deletePunch = createServerFn({ method: 'POST' })
   .handler(async ({ data: punchId }) => {
     await db.delete(punches).where(eq(punches.id, punchId))
     return { success: true }
+  })
+
+// Admin: Delete multiple punch records
+export const deletePunches = createServerFn({ method: 'POST' })
+  .inputValidator((punchIds: number[]) => punchIds)
+  .handler(async ({ data: punchIds }) => {
+    if (punchIds.length === 0) return { success: true, deleted: 0 }
+    await db.delete(punches).where(inArray(punches.id, punchIds))
+    return { success: true, deleted: punchIds.length }
   })
 
 // Admin: Manually add a punch for a user
