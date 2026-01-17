@@ -14,6 +14,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SignupSplatRouteImport } from './routes/signup.$'
+import { Route as LoginSplatRouteImport } from './routes/login.$'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -40,43 +42,81 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupSplatRoute = SignupSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => SignupRoute,
+} as any)
+const LoginSplatRoute = LoginSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => LoginRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
+  '/login': typeof LoginRouteWithChildren
+  '/signup': typeof SignupRouteWithChildren
+  '/login/$': typeof LoginSplatRoute
+  '/signup/$': typeof SignupSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
+  '/login': typeof LoginRouteWithChildren
+  '/signup': typeof SignupRouteWithChildren
+  '/login/$': typeof LoginSplatRoute
+  '/signup/$': typeof SignupSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
+  '/login': typeof LoginRouteWithChildren
+  '/signup': typeof SignupRouteWithChildren
+  '/login/$': typeof LoginSplatRoute
+  '/signup/$': typeof SignupSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/history' | '/login' | '/signup'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/login/$'
+    | '/signup/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/history' | '/login' | '/signup'
-  id: '__root__' | '/' | '/admin' | '/history' | '/login' | '/signup'
+  to:
+    | '/'
+    | '/admin'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/login/$'
+    | '/signup/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/login/$'
+    | '/signup/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   HistoryRoute: typeof HistoryRoute
-  LoginRoute: typeof LoginRoute
-  SignupRoute: typeof SignupRoute
+  LoginRoute: typeof LoginRouteWithChildren
+  SignupRoute: typeof SignupRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -116,15 +156,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signup/$': {
+      id: '/signup/$'
+      path: '/$'
+      fullPath: '/signup/$'
+      preLoaderRoute: typeof SignupSplatRouteImport
+      parentRoute: typeof SignupRoute
+    }
+    '/login/$': {
+      id: '/login/$'
+      path: '/$'
+      fullPath: '/login/$'
+      preLoaderRoute: typeof LoginSplatRouteImport
+      parentRoute: typeof LoginRoute
+    }
   }
 }
+
+interface LoginRouteChildren {
+  LoginSplatRoute: typeof LoginSplatRoute
+}
+
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginSplatRoute: LoginSplatRoute,
+}
+
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
+
+interface SignupRouteChildren {
+  SignupSplatRoute: typeof SignupSplatRoute
+}
+
+const SignupRouteChildren: SignupRouteChildren = {
+  SignupSplatRoute: SignupSplatRoute,
+}
+
+const SignupRouteWithChildren =
+  SignupRoute._addFileChildren(SignupRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   HistoryRoute: HistoryRoute,
-  LoginRoute: LoginRoute,
-  SignupRoute: SignupRoute,
+  LoginRoute: LoginRouteWithChildren,
+  SignupRoute: SignupRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
