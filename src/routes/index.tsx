@@ -63,7 +63,7 @@ function PunchBoard() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
+        <CardContent className="py-12 text-center text-muted-foreground font-bold uppercase">
           Loading...
         </CardContent>
       </Card>
@@ -71,46 +71,46 @@ function PunchBoard() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Current User Card - Prominent */}
       {user && (
         <Card 
-          className={`transition-colors ${
+          className={`transition-all ${
             isClockedIn 
-              ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30' 
-              : ''
+              ? 'bg-[hsl(140_70%_85%)] border-foreground' 
+              : 'bg-card'
           }`}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
               {/* Status indicator */}
               <div 
-                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                className={`w-14 h-14 flex items-center justify-center shrink-0 border-3 border-foreground shadow-[3px_3px_0px_hsl(0_0%_5%)] ${
                   isClockedIn 
-                    ? 'bg-emerald-500 text-white' 
+                    ? 'bg-[hsl(140_80%_45%)] text-white' 
                     : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {isClockedIn ? (
-                  <Clock className="w-6 h-6" />
+                  <Clock className="w-7 h-7" />
                 ) : (
-                  <LogIn className="w-6 h-6" />
+                  <LogIn className="w-7 h-7" />
                 )}
               </div>
 
               {/* Info */}
               <button 
                 type="button"
-                className="flex-1 min-w-0 text-left"
+                className="flex-1 min-w-0 text-left group"
                 onClick={() => navigate({ to: `/students/${user.id}` })}
               >
-                <div className="font-semibold text-lg truncate hover:text-primary hover:underline">
+                <div className="font-extrabold text-lg truncate group-hover:text-primary group-hover:underline underline-offset-2 decoration-2">
                   {user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || 'You'}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm font-medium text-muted-foreground">
                   {isClockedIn && currentUserStatus ? (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      In since {formatTime(currentUserStatus.lastPunchTime)}
+                    <span className="text-[hsl(140_80%_30%)] font-bold">
+                      ● In since {formatTime(currentUserStatus.lastPunchTime)}
                     </span>
                   ) : (
                     'Not clocked in'
@@ -149,7 +149,7 @@ function PunchBoard() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="w-4 h-4" />
+            <Users className="w-5 h-5" />
             Who's Here
           </CardTitle>
           <CardDescription>
@@ -163,20 +163,20 @@ function PunchBoard() {
         
         {othersClockedIn.length > 0 && (
           <CardContent className="pt-0">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {othersClockedIn.map((u) => {
                 const content = (
                   <>
-                    {/* Green dot */}
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    {/* Green indicator */}
+                    <div className="w-3 h-3 bg-[hsl(140_80%_45%)] border-2 border-foreground shrink-0" />
                     
                     {/* Name */}
-                    <div className={`flex-1 font-medium truncate text-left ${isAdmin ? 'group-hover:underline' : ''}`}>
+                    <div className={`flex-1 font-bold truncate text-left ${isAdmin ? 'group-hover:underline underline-offset-2' : ''}`}>
                       {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                     </div>
                     
                     {/* Time */}
-                    <div className="text-sm text-muted-foreground shrink-0">
+                    <div className="text-sm font-medium text-muted-foreground shrink-0">
                       {formatTime(u.lastPunchTime)}
                     </div>
                   </>
@@ -186,7 +186,7 @@ function PunchBoard() {
                   <button
                     key={u.userId}
                     type="button"
-                    className="group w-full flex items-center gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors text-primary"
+                    className="group w-full flex items-center gap-3 p-4 bg-[hsl(140_70%_90%)] border-2 border-foreground cursor-pointer hover:bg-[hsl(140_70%_85%)] transition-colors shadow-[2px_2px_0px_hsl(0_0%_5%)] hover:shadow-[3px_3px_0px_hsl(0_0%_5%)] hover:-translate-x-px hover:-translate-y-px"
                     onClick={() => navigate({ to: `/admin/students/${u.userId}` })}
                   >
                     {content}
@@ -194,7 +194,7 @@ function PunchBoard() {
                 ) : (
                   <div
                     key={u.userId}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30"
+                    className="flex items-center gap-3 p-4 bg-[hsl(140_70%_90%)] border-2 border-foreground shadow-[2px_2px_0px_hsl(0_0%_5%)]"
                   >
                     {content}
                   </div>
@@ -214,7 +214,7 @@ function App() {
   if (!isLoaded) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground font-bold uppercase tracking-wide">Loading...</div>
       </div>
     )
   }
@@ -222,17 +222,17 @@ function App() {
   if (!isSignedIn) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-md mx-auto flex items-center justify-center">
-        <Card className="w-full">
+        <Card className="w-full bg-secondary">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">packapunch</CardTitle>
-            <CardDescription>Sign in to track your hours</CardDescription>
+            <CardTitle className="text-4xl">packapunch</CardTitle>
+            <CardDescription className="text-base">Sign in to track your hours</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <Button asChild className="w-full">
                 <Link to="/login">Sign In</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full bg-background">
                 <Link to="/signup">Create Account</Link>
               </Button>
             </div>
@@ -245,14 +245,14 @@ function App() {
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Hey, {user?.firstName || 'there'}!</h1>
-        <p className="text-muted-foreground">Ready to track your hours?</p>
+        <h1 className="text-3xl font-extrabold uppercase tracking-tight">Hey, {user?.firstName || 'there'}!</h1>
+        <p className="text-muted-foreground font-medium">Ready to track your hours?</p>
       </div>
       
       <PunchBoard />
 
-      <div className="mt-4 text-center">
-        <Button variant="link" asChild>
+      <div className="mt-6 text-center">
+        <Button variant="link" asChild className="font-bold">
           <Link to="/history">View your history →</Link>
         </Button>
       </div>

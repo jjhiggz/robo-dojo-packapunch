@@ -75,50 +75,50 @@ function AdminDashboard() {
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight flex items-center gap-2">
           <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
           Admin Dashboard
         </h1>
-        <p className="text-sm text-muted-foreground">Monitor attendance and hours</p>
+        <p className="text-sm text-muted-foreground font-medium">Monitor attendance and hours</p>
       </div>
 
       {/* Stats Overview - Horizontal scroll on mobile */}
       <div className="flex gap-3 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
-        <Card className="shrink-0 w-[140px] sm:w-auto">
+        <Card className="shrink-0 w-[140px] sm:w-auto bg-[hsl(140_70%_85%)]">
           <CardContent className="p-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[hsl(140_80%_45%)] border-2 border-foreground flex items-center justify-center shrink-0 shadow-[2px_2px_0px_hsl(0_0%_5%)]">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{clockedInUsers.length}</div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Currently In</p>
+                <div className="text-2xl sm:text-3xl font-extrabold">{clockedInUsers.length}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground font-bold uppercase">Currently In</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="shrink-0 w-[140px] sm:w-auto">
+        <Card className="shrink-0 w-[140px] sm:w-auto bg-[hsl(210_70%_85%)]">
           <CardContent className="p-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary border-2 border-foreground flex items-center justify-center shrink-0 shadow-[2px_2px_0px_hsl(0_0%_5%)]">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{usersStatus.length}</div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Total Students</p>
+                <div className="text-2xl sm:text-3xl font-extrabold">{usersStatus.length}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground font-bold uppercase">Total Students</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="shrink-0 w-[140px] sm:w-auto">
+        <Card className="shrink-0 w-[140px] sm:w-auto bg-[hsl(280_70%_88%)]">
           <CardContent className="p-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent border-2 border-foreground flex items-center justify-center shrink-0 shadow-[2px_2px_0px_hsl(0_0%_5%)]">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{formatHours(totalMonthHours)}</div>
-                <p className="text-xs sm:text-sm text-muted-foreground">This Month</p>
+                <div className="text-2xl sm:text-3xl font-extrabold">{formatHours(totalMonthHours)}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground font-bold uppercase">This Month</p>
               </div>
             </div>
           </CardContent>
@@ -133,7 +133,7 @@ function AdminDashboard() {
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => navigateMonth('prev')}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="flex-1 text-center font-semibold">
+            <span className="flex-1 text-center font-extrabold uppercase">
               {formatMonth(selectedMonth)}
             </span>
             <Button
@@ -146,13 +146,13 @@ function AdminDashboard() {
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">Tap a student for details</p>
+          <p className="text-xs text-muted-foreground text-center font-medium">Tap a student for details</p>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           {statsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground font-bold uppercase">Loading...</div>
           ) : monthlyStats.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
+            <div className="text-center py-8 text-muted-foreground text-sm font-medium">
               No activity recorded for this month
             </div>
           ) : (
@@ -165,34 +165,34 @@ function AdminDashboard() {
                   <button
                     key={stat.userId}
                     type="button"
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors hover:bg-muted/50 ${
-                      isClockedIn ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''
+                    className={`w-full flex items-center gap-3 p-4 text-left transition-all border-2 border-foreground shadow-[2px_2px_0px_hsl(0_0%_5%)] hover:shadow-[3px_3px_0px_hsl(0_0%_5%)] hover:-translate-x-px hover:-translate-y-px ${
+                      isClockedIn ? 'bg-[hsl(140_70%_90%)]' : 'bg-card hover:bg-muted'
                     }`}
                     onClick={() => navigate({ to: '/admin/students/$userId', params: { userId: stat.userId } })}
                   >
                     {/* Status dot */}
                     <div
-                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                        isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
+                      className={`w-3 h-3 shrink-0 border-2 border-foreground ${
+                        isClockedIn ? 'bg-[hsl(140_80%_45%)]' : 'bg-muted'
                       }`}
                     />
                     
                     {/* Name and email */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
+                      <div className="font-bold truncate">
                         {stat.userName || 'Unknown'}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate hidden xs:block">
+                      <div className="text-xs text-muted-foreground truncate hidden xs:block font-medium">
                         {stat.userEmail || '-'}
                       </div>
                     </div>
                     
                     {/* Stats */}
                     <div className="text-right shrink-0">
-                      <div className="font-bold text-sm sm:text-base">
+                      <div className="font-extrabold text-sm sm:text-base">
                         {formatHours(stat.totalHours)}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground font-medium">
                         {stat.daysWorked}d · {formatHours(stat.avgHoursPerDay)}/d
                       </div>
                     </div>
