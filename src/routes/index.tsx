@@ -2,7 +2,6 @@ import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { LogIn, LogOut, Users } from 'lucide-react'
-import { ADMIN_EMAILS } from './admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -14,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getAllUsersStatus, punch } from '@/server/punches'
+import { ADMIN_EMAILS } from './admin'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -160,9 +160,10 @@ function PunchBoardTable() {
               </TableRow>
             )}
 
-            {/* Other users - only show those currently clocked in */}
+            {/* Other users - only show those currently clocked in (max 50) */}
             {sortedUsers
               .filter((u) => u.userId !== user?.id && u.isClockedIn)
+              .slice(0, 50)
               .map((u) => (
                 <TableRow 
                   key={u.userId}

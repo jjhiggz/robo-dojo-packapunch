@@ -152,7 +152,7 @@ function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {clockedInUsers.map((u) => (
+              {clockedInUsers.slice(0, 50).map((u) => (
                 <Link
                   key={u.userId}
                   to="/admin/students/$userId"
@@ -216,7 +216,7 @@ function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlyStats.map((stat) => {
+                {monthlyStats.slice(0, 50).map((stat) => {
                   const currentStatus = usersStatus.find((u) => u.userId === stat.userId)
                   const isClockedIn = currentStatus?.isClockedIn ?? false
 
