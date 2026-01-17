@@ -23,14 +23,6 @@ export const Route = createFileRoute('/admin/')({
   component: AdminDashboard,
 })
 
-const formatTime = (date: Date | string) => {
-  return new Date(date).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
-
 const formatHours = (hours: number) => {
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
