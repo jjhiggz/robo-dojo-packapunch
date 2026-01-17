@@ -339,3 +339,48 @@ export const getUserMonthlyBreakdown = createServerFn({ method: 'POST' })
     return weeklyBreakdown
   })
 
+// Admin: Update a punch record's timestamp
+export const updatePunch = createServerFn({ method: 'POST' })
+  .inputValidator((data: { punchId: number; timestamp: string }) => data)
+  .handler(async ({ data }) => {
+    const [updated] = await db
+      .update(punches)
+      .set({ timestamp: new Date(data.timestamp) })
+      .where(eq(punches.id, data.punchId))
+      .returning()
+
+    return updated
+  })
+
+// Admin: Delete a punch record
+export const deletePunch = createServerFn({ method: 'POST' })
+  .inputValidator((punchId: number) => punchId)
+  .handler(async ({ data: punchId }) => {
+    await db.delete(punches).where(eq(punches.id, punchId))
+    return { success: true }
+  })
+
+// Admin: Manually add a punch for a user
+export const addPunch = createServerFn({ method: 'POST' })
+  .inputValidator((data: { 
+    userId: string
+    userName?: string
+    userEmail?: string
+    type: 'in' | 'out'
+    timestamp: string
+  }) => data)
+  .handler(async ({ data }) => {
+    const [newPunch] = await db
+      .insert(punches)
+      .values({
+        userId: data.userId,
+        userName: data.userName || null,
+        userEmail: data.userEmail || null,
+        type: data.type,
+        timestamp: new Date(data.timestamp),
+      })
+      .returning()
+
+    return newPunch
+  })
+

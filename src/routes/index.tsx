@@ -1,7 +1,8 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { LogIn, LogOut, Users } from 'lucide-react'
+import { ADMIN_EMAILS } from './admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -26,9 +27,13 @@ const formatTime = (date: Date | string) => {
   })
 }
 
-function WhosInTable() {
+function PunchBoardTable() {
   const { user } = useUser()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
+  
+  const userEmail = user?.emailAddresses[0]?.emailAddress
+  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
 
   const { data: usersStatus = [], isLoading } = useQuery({
     queryKey: ['allUsersStatus'],
@@ -83,18 +88,18 @@ function WhosInTable() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5" />
-          Who's In
-        </CardTitle>
-        <CardDescription>
+          Punch Board
+            </CardTitle>
+            <CardDescription>
           {clockedInCount === 0
             ? 'No one is currently in the building'
             : `${clockedInCount} ${clockedInCount === 1 ? 'person' : 'people'} in the building`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,7 +159,16 @@ function WhosInTable() {
             {sortedUsers
               .filter((u) => u.userId !== user?.id)
               .map((u) => (
-                <TableRow key={u.userId}>
+                <TableRow 
+                  key={u.userId}
+                  className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                    const targetRoute = isAdmin 
+                      ? `/admin/students/${u.userId}` 
+                      : `/students/${u.userId}`
+                    navigate({ to: targetRoute })
+                  }}
+                >
                   <TableCell>
                     <div
                       className={`w-4 h-4 rounded-full ${
@@ -162,7 +176,7 @@ function WhosInTable() {
                       }`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-primary hover:underline">
                     {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">
@@ -182,8 +196,8 @@ function WhosInTable() {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
   )
 }
 
@@ -194,7 +208,7 @@ function App() {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
-      </div>
+                    </div>
     )
   }
 
@@ -217,24 +231,24 @@ function App() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    )
-  }
-
-  return (
+                    </div>
+                  )
+                }
+                
+                    return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Hey, {user?.firstName || 'there'}!</h1>
         <p className="text-muted-foreground">Ready to track your hours?</p>
-      </div>
-
-      <WhosInTable />
+                        </div>
+                        
+      <PunchBoardTable />
 
       <div className="mt-4 text-center">
         <Button variant="link" asChild>
           <Link to="/history">View your history →</Link>
-        </Button>
-      </div>
+                                  </Button>
+                                </div>
     </div>
   )
 }

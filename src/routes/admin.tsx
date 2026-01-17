@@ -1,6 +1,6 @@
 import { useUser } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { Calendar, ChevronLeft, ChevronRight, Clock, Shield, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,6 @@ import {
 import {
   getAllUsersStatus,
   getAllUsersMonthlyStats,
-  getUserMonthlyBreakdown,
   calculateHoursFromPunches,
 } from '@/server/punches'
 
@@ -25,7 +24,7 @@ export const Route = createFileRoute('/admin')({
 })
 
 // Add your admin email addresses here
-const ADMIN_EMAILS = ['jonathan.higger@gmail.com']
+export const ADMIN_EMAILS = ['jonathan.higger@gmail.com']
 
 const formatTime = (date: Date | string) => {
   return new Date(date).toLocaleTimeString('en-US', {
@@ -63,107 +62,10 @@ const getAdjacentMonth = (monthStr: string, direction: 'prev' | 'next') => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-function StudentDetail({
-  student,
-  onBack,
-  month,
-}: {
-  student: { userId: string; userName: string | null; userEmail: string | null }
-  onBack: () => void
-  month: string
-}) {
-  const { data: breakdown = [], isLoading } = useQuery({
-    queryKey: ['userMonthlyBreakdown', student.userId, month],
-    queryFn: () =>
-      getUserMonthlyBreakdown({
-        data: { userId: student.userId, month },
-      }),
-  })
-
-  const totalHours = breakdown.reduce((sum, w) => sum + w.hours, 0)
-  const totalDays = breakdown.reduce((sum, w) => sum + w.days, 0)
-
-  return (
-    <div>
-      <Button variant="ghost" className="mb-4" onClick={onBack}>
-        <ChevronLeft className="w-4 h-4 mr-2" />
-        Back to all students
-      </Button>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{student.userName || 'Unknown Student'}</CardTitle>
-          <CardDescription>{student.userEmail || student.userId}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-3xl font-bold">{formatHours(totalHours)}</div>
-              <p className="text-sm text-muted-foreground">Total Hours</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold">{totalDays}</div>
-              <p className="text-sm text-muted-foreground">Days Worked</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly Breakdown - {formatMonth(month)}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : breakdown.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No activity this month
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Week</TableHead>
-                  <TableHead className="text-right">Days</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {breakdown.map((week) => (
-                  <TableRow key={week.weekStart}>
-                    <TableCell>
-                      {new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {' - '}
-                      {new Date(week.weekEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </TableCell>
-                    <TableCell className="text-right">{week.days}</TableCell>
-                    <TableCell className="text-right font-medium">{formatHours(week.hours)}</TableCell>
-                  </TableRow>
-                ))}
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-right">{totalDays}</TableCell>
-                  <TableCell className="text-right">{formatHours(totalHours)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
 function AdminPage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
-  const [selectedStudent, setSelectedStudent] = useState<{
-    userId: string
-    userName: string | null
-    userEmail: string | null
-  } | null>(null)
 
   const userEmail = user?.emailAddresses[0]?.emailAddress
   const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
@@ -212,18 +114,6 @@ function AdminPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    )
-  }
-
-  if (selectedStudent) {
-    return (
-      <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
-        <StudentDetail
-          student={selectedStudent}
-          onBack={() => setSelectedStudent(null)}
-          month={selectedMonth}
-        />
       </div>
     )
   }
@@ -295,16 +185,17 @@ function AdminPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {clockedInUsers.map((u) => (
-                <button
+                <Link
                   key={u.userId}
-                  onClick={() => setSelectedStudent(u)}
+                  to="/admin/students/$userId"
+                  params={{ userId: u.userId }}
                   className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition-colors"
                 >
                   {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                   <span className="ml-2 text-emerald-600">
                     since {formatTime(u.lastPunchTime)}
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -365,13 +256,7 @@ function AdminPage() {
                     <TableRow
                       key={stat.userId}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        setSelectedStudent({
-                          userId: stat.userId,
-                          userName: stat.userName,
-                          userEmail: stat.userEmail,
-                        })
-                      }
+                      onClick={() => navigate({ to: '/admin/students/$userId', params: { userId: stat.userId } })}
                     >
                       <TableCell>
                         <div
