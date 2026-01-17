@@ -160,9 +160,9 @@ function PunchBoardTable() {
               </TableRow>
             )}
 
-            {/* Other users */}
+            {/* Other users - only show those currently clocked in */}
             {sortedUsers
-              .filter((u) => u.userId !== user?.id)
+              .filter((u) => u.userId !== user?.id && u.isClockedIn)
               .map((u) => (
                 <TableRow 
                   key={u.userId}
@@ -170,27 +170,23 @@ function PunchBoardTable() {
                   onClick={isAdmin ? () => navigate({ to: `/admin/students/${u.userId}` }) : undefined}
                 >
                   <TableCell>
-                    <div
-                      className={`w-4 h-4 rounded-full ${
-                        u.isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
-                      }`}
-                    />
+                    <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse" />
                   </TableCell>
                   <TableCell className={`font-medium ${isAdmin ? 'text-primary hover:underline' : ''}`}>
                     {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">
-                    {u.isClockedIn ? formatTime(u.lastPunchTime) : '—'}
+                    {formatTime(u.lastPunchTime)}
                   </TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               ))}
 
-            {/* Empty state if no other users */}
-            {sortedUsers.filter((u) => u.userId !== user?.id).length === 0 && (
+            {/* Empty state if no other users clocked in */}
+            {sortedUsers.filter((u) => u.userId !== user?.id && u.isClockedIn).length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                  You're the first one here!
+                  No one else is clocked in right now
                 </TableCell>
               </TableRow>
             )}
