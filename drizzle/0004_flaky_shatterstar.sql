@@ -1,0 +1,1 @@
+ALTER TABLE "songs" ADD COLUMN "song_link" varchar(500);

@@ -1,0 +1,1 @@
+ALTER TABLE "songs" ADD COLUMN "facebook_url" varchar(500);

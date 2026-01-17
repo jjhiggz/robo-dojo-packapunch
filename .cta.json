@@ -1,0 +1,23 @@
+{
+  "projectName": "music-queue",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "npm",
+  "addOnOptions": {
+    "drizzle": {
+      "database": "postgresql"
+    }
+  },
+  "git": true,
+  "version": 1,
+  "framework": "react-cra",
+  "chosenAddOns": [
+    "biome",
+    "drizzle",
+    "oRPC",
+    "tanstack-query",
+    "clerk",
+    "start"
+  ]
+}

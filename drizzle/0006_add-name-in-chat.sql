@@ -1,0 +1,1 @@
+ALTER TABLE "songs" ADD COLUMN "name_in_chat" varchar(100);
