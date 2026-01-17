@@ -8,7 +8,12 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
-      <SignIn routing="path" path="/login" signUpUrl="/signup" />
+      <SignIn 
+        routing="path" 
+        path="/login" 
+        signUpUrl="/signup"
+        fallbackRedirectUrl="/"
+      />
     </div>
   )
 }
