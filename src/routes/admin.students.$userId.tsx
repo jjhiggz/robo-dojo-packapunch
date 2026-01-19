@@ -30,7 +30,7 @@ import {
   getPunchHistory,
   updatePunch,
 } from '@/server/punches'
-import { ADMIN_EMAILS } from './admin'
+import { ADMIN_EMAILS } from '@/lib/constants'
 
 export const Route = createFileRoute('/admin/students/$userId')({
   component: StudentDetailPage,

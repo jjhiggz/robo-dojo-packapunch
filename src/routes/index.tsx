@@ -5,7 +5,7 @@ import { Clock, LogIn, LogOut, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAllUsersStatus, punch } from '@/server/punches'
-import { ADMIN_EMAILS } from './admin'
+import { ADMIN_EMAILS } from '@/lib/constants'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -37,7 +37,7 @@ function PunchBoard() {
     mutationFn: (type: 'in' | 'out') =>
       punch({
         data: {
-          userId: user!.id,
+          userId: user?.id ?? '',
           userName: user?.fullName || user?.firstName || undefined,
           userEmail: user?.emailAddresses[0]?.emailAddress,
           type,

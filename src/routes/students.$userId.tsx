@@ -86,8 +86,9 @@ function WeeklyPunchCard({ userId, weekStart }: { userId: string; weekStart: Dat
     }
     for (const p of punches) {
       const dateKey = new Date(p.timestamp).toISOString().split('T')[0]
-      if (grouped.has(dateKey)) {
-        grouped.get(dateKey)!.push(p)
+      const dayPunches = grouped.get(dateKey)
+      if (dayPunches) {
+        dayPunches.push(p)
       }
     }
     return grouped

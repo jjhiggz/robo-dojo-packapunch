@@ -2,13 +2,11 @@ import { useUser } from '@clerk/clerk-react'
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router'
 import { Shield } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { ADMIN_EMAILS } from '@/lib/constants'
 
 export const Route = createFileRoute('/admin')({
   component: AdminLayout,
 })
-
-// Add your admin email addresses here
-export const ADMIN_EMAILS = ['jonathan.higger@gmail.com']
 
 function AdminLayout() {
   const { user, isSignedIn, isLoaded } = useUser()

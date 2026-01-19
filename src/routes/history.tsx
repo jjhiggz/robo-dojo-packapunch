@@ -87,7 +87,7 @@ function HistoryPage() {
     queryFn: () =>
       getPunchHistory({
         data: {
-          userId: user!.id,
+          userId: user?.id ?? '',
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
         },
@@ -100,7 +100,7 @@ function HistoryPage() {
     queryFn: () =>
       getWeeklySummary({
         data: {
-          userId: user!.id,
+          userId: user?.id ?? '',
           weekStart: weekStart.toISOString(),
         },
       }),
@@ -115,7 +115,10 @@ function HistoryPage() {
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, [])
       }
-      grouped.get(dateKey)!.push(p)
+      const dayPunches = grouped.get(dateKey)
+      if (dayPunches) {
+        dayPunches.push(p)
+      }
     }
     // Sort by date descending
     return Array.from(grouped.entries()).sort((a, b) => b[0].localeCompare(a[0]))

@@ -4,12 +4,12 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Calendar, ChevronLeft, ChevronRight, Clock, Shield, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   getAllUsersMonthlyStats,
   getAllUsersStatus,
 } from '@/server/punches'
-import { ADMIN_EMAILS } from './admin'
+import { ADMIN_EMAILS } from '@/lib/constants'
 
 export const Route = createFileRoute('/admin/')({
   component: AdminDashboard,

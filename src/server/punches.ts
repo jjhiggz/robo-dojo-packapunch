@@ -259,7 +259,10 @@ export const getAllUsersMonthlyStats = createServerFn({ method: 'POST' })
           punches: [],
         })
       }
-      userPunches.get(p.userId)!.punches.push(p)
+      const userPunch = userPunches.get(p.userId)
+      if (userPunch) {
+        userPunch.punches.push(p)
+      }
     }
 
     // Calculate stats for each user
@@ -305,7 +308,7 @@ export const getUserMonthlyBreakdown = createServerFn({ method: 'POST' })
     // Group by week
     const weeklyBreakdown: { weekStart: string; weekEnd: string; hours: number; days: number }[] = []
     
-    let currentWeekStart = new Date(start)
+    const currentWeekStart = new Date(start)
     // Adjust to start of week (Sunday)
     currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay())
 

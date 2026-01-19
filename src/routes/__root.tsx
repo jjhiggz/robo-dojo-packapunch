@@ -1,20 +1,16 @@
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import type { QueryClient } from '@tanstack/react-query'
 import {
+  createRootRouteWithContext,
   HeadContent,
   Scripts,
-  createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
 import Header from '../components/Header'
 
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
-
 import ClerkProvider from '../integrations/clerk/provider'
-
+import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
-
-import type { QueryClient } from '@tanstack/react-query'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -46,7 +42,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap',
       },
       {
         rel: 'stylesheet',
@@ -68,8 +64,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ClerkProvider>
           <Header />
           {children}
-          <footer className="py-6 text-center text-sm text-muted-foreground border-t mt-8">
-            packapunch
+          <footer className="py-6 text-center text-sm text-muted-foreground border-t border-primary/30 mt-8">
+            <span className="font-semibold tracking-widest uppercase text-glow-pink text-primary/70">packapunch</span>
           </footer>
           <TanStackDevtools
             config={{
