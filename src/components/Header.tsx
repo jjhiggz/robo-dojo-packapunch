@@ -1,8 +1,8 @@
 import { useUser } from '@clerk/clerk-react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { Shield } from 'lucide-react'
-import ClerkHeader from '../integrations/clerk/header-user.tsx'
 import { ADMIN_EMAILS } from '@/lib/constants'
+import ClerkHeader from '../integrations/clerk/header-user.tsx'
 
 // Boxing glove SVG icon component
 const BoxingGlove = ({ className }: { className?: string }) => (
