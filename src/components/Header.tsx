@@ -50,116 +50,125 @@ export default function Header() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
       <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
       
-      <div className="p-4 flex items-center justify-between relative z-10">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="bg-primary/20 p-2.5 rounded border-2 border-primary shadow-neon-pink-sm group-hover:shadow-neon-pink transition-all duration-300">
-            <BoxingGlove className="w-5 h-5 text-primary" />
+      {/* Top row: Logo and User */}
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between relative z-10">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+          <div className="bg-primary/20 p-2 sm:p-2.5 rounded border-2 border-primary shadow-neon-pink-sm group-hover:shadow-neon-pink transition-all duration-300">
+            <BoxingGlove className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-widest text-secondary text-glow-cyan">
+          <h1 className="text-lg sm:text-xl font-bold tracking-widest text-secondary text-glow-cyan">
             PACKAPUNCH
           </h1>
         </Link>
 
-        {/* Org/Board Selector - only show if signed in and has orgs */}
-        {isSignedIn && hasOrgs && (
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Organization Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3 text-xs sm:text-sm"
-                >
-                  <Building2 className="w-4 h-4 shrink-0" />
-                  <span className="hidden xs:inline max-w-[60px] sm:max-w-[100px] truncate">
-                    {currentOrg?.name || 'Org'}
-                  </span>
-                  <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="min-w-[180px]">
-                <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {organizations.map((org) => (
-                  <DropdownMenuItem
-                    key={org.id}
-                    onClick={() => setCurrentOrg(org)}
-                    className={currentOrg?.id === org.id ? 'bg-accent' : ''}
-                  >
-                    <Building2 className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{org.name}</span>
-                    {org.role === 'admin' && (
-                      <Shield className="w-3 h-3 ml-auto text-accent shrink-0" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <ClerkHeader />
+      </div>
 
-            {/* Board Selector */}
-            {hasBoards && (
+      {/* Bottom row: Navigation tabs + Org/Board selectors */}
+      {isSignedIn && (
+        <nav className="px-4 pb-0 flex items-end justify-between gap-2 relative z-10">
+          {/* Left side: Page tabs */}
+          <div className="flex gap-1 sm:gap-2">
+            <Link
+              to="/"
+              className={`px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all duration-200 rounded-t border-2 border-b-0 ${
+                currentPath === '/' || currentPath === '/history'
+                  ? 'bg-card text-secondary border-secondary shadow-neon-cyan-sm translate-y-[2px]'
+                  : 'bg-background/50 text-muted-foreground border-muted hover:text-secondary hover:border-secondary/50 hover:shadow-neon-cyan-sm'
+              }`}
+            >
+              My Hours
+            </Link>
+            {isOrgAdmin && (
+              <Link
+                to="/admin"
+                className={`px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all duration-200 flex items-center gap-1 sm:gap-2 rounded-t border-2 border-b-0 ${
+                  currentPath.startsWith('/admin')
+                    ? 'bg-card text-accent border-accent shadow-neon-purple translate-y-[2px]'
+                    : 'bg-background/50 text-muted-foreground border-muted hover:text-accent hover:border-accent/50 hover:shadow-neon-purple'
+                }`}
+              >
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Admin</span>
+              </Link>
+            )}
+          </div>
+
+          {/* Right side: Org/Board selectors */}
+          {hasOrgs && (
+            <div className="flex items-center gap-0.5 sm:gap-1 pb-1">
+              {/* Organization Selector */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     size="sm" 
-                    className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3 text-xs sm:text-sm"
+                    className="h-8 gap-1 font-medium px-1.5 sm:px-2 text-xs hover:bg-secondary/20"
                   >
-                    <LayoutGrid className="w-4 h-4 shrink-0" />
-                    <span className="hidden xs:inline max-w-[60px] sm:max-w-[100px] truncate">
-                      {currentBoard?.name || 'Board'}
+                    <Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                    <span className="hidden sm:inline max-w-[80px] truncate">
+                      {currentOrg?.name || 'Org'}
                     </span>
                     <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="min-w-[180px]">
-                  <DropdownMenuLabel>Boards</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuLabel>Organizations</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {boards.map((board) => (
+                  {organizations.map((org) => (
                     <DropdownMenuItem
-                      key={board.id}
-                      onClick={() => setCurrentBoard(board)}
-                      className={currentBoard?.id === board.id ? 'bg-accent' : ''}
+                      key={org.id}
+                      onClick={() => setCurrentOrg(org)}
+                      className={currentOrg?.id === org.id ? 'bg-accent/20' : ''}
                     >
-                      <LayoutGrid className="w-4 h-4 mr-2 shrink-0" />
-                      <span className="truncate">{board.name}</span>
+                      <Building2 className="w-4 h-4 mr-2 shrink-0" />
+                      <span className="truncate">{org.name}</span>
+                      {org.role === 'admin' && (
+                        <Shield className="w-3 h-3 ml-auto text-accent shrink-0" />
+                      )}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
-          </div>
-        )}
 
-        <ClerkHeader />
-      </div>
+              {/* Separator - hidden on mobile */}
+              {hasBoards && (
+                <span className="hidden sm:inline text-muted-foreground/50 text-xs">/</span>
+              )}
 
-      {/* Navigation tabs for signed-in users */}
-      {isSignedIn && (
-        <nav className="px-4 pb-0 flex gap-3 relative z-10">
-          <Link
-            to="/"
-            className={`px-5 py-3 text-sm font-semibold uppercase tracking-wider transition-all duration-200 rounded-t border-2 border-b-0 ${
-              currentPath === '/' || currentPath === '/history'
-                ? 'bg-card text-secondary border-secondary shadow-neon-cyan-sm translate-y-[2px]'
-                : 'bg-background/50 text-muted-foreground border-muted hover:text-secondary hover:border-secondary/50 hover:shadow-neon-cyan-sm'
-            }`}
-          >
-            My Hours
-          </Link>
-          {isOrgAdmin && (
-            <Link
-              to="/admin"
-              className={`px-5 py-3 text-sm font-semibold uppercase tracking-wider transition-all duration-200 flex items-center gap-2 rounded-t border-2 border-b-0 ${
-                currentPath.startsWith('/admin')
-                  ? 'bg-card text-accent border-accent shadow-neon-purple translate-y-[2px]'
-                  : 'bg-background/50 text-muted-foreground border-muted hover:text-accent hover:border-accent/50 hover:shadow-neon-purple'
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              Admin
-            </Link>
+              {/* Board Selector */}
+              {hasBoards && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 gap-1 font-medium px-1.5 sm:px-2 text-xs hover:bg-secondary/20"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                      <span className="hidden sm:inline max-w-[80px] truncate">
+                        {currentBoard?.name || 'Board'}
+                      </span>
+                      <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[180px]">
+                    <DropdownMenuLabel>Boards</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {boards.map((board) => (
+                      <DropdownMenuItem
+                        key={board.id}
+                        onClick={() => setCurrentBoard(board)}
+                        className={currentBoard?.id === board.id ? 'bg-accent/20' : ''}
+                      >
+                        <LayoutGrid className="w-4 h-4 mr-2 shrink-0" />
+                        <span className="truncate">{board.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           )}
         </nav>
       )}
