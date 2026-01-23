@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Building2, Calendar } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { useBoardContext } from '@/lib/board-context'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -53,24 +53,6 @@ function OrganizationSettingsPage() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label className="font-bold flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Created
-            </Label>
-            <Input
-              value={new Date(currentOrg.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-              disabled
-              className="border-2"
-            />
-            <p className="text-xs text-muted-foreground font-medium">
-              Organization creation date
-            </p>
-          </div>
         </CardContent>
       </Card>
 

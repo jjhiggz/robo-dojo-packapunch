@@ -1,6 +1,6 @@
 import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/clerk-react'
 import { Link } from '@tanstack/react-router'
-import { Building2, ChevronDown, LogOut, Settings, Shield, User } from 'lucide-react'
+import { Building2, LogOut, Settings, Shield, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {

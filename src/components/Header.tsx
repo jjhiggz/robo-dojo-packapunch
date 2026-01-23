@@ -1,17 +1,8 @@
 import { useUser } from '@clerk/clerk-react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Building2, ChevronDown, LayoutGrid } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { useBoardContext } from '@/lib/board-context'
 import ClerkHeader from '../integrations/clerk/header-user.tsx'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
 
 // Boxing glove SVG icon component
 const BoxingGlove = ({ className }: { className?: string }) => (
@@ -31,15 +22,9 @@ export default function Header() {
   const { isSignedIn } = useUser()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  const {
-    organizations,
-    currentBoard,
-    boards,
-    setCurrentBoard
-  } = useBoardContext()
+  const { organizations } = useBoardContext()
 
   const hasOrgs = organizations.length > 0
-  const hasBoards = boards.length > 0
 
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b-2 border-primary/50 relative overflow-hidden">
@@ -61,10 +46,10 @@ export default function Header() {
         <ClerkHeader />
       </div>
 
-      {/* Bottom row: Navigation tabs + Org/Board selectors */}
+      {/* Bottom row: Navigation tabs */}
       {isSignedIn && (
-        <nav className="px-4 pb-0 flex items-end justify-between gap-2 relative z-10">
-          {/* Left side: Page tabs */}
+        <nav className="px-4 pb-0 flex items-end gap-2 relative z-10">
+          {/* Page tabs */}
           <div className="flex gap-1 sm:gap-2">
             <Link
               to="/board"
@@ -90,42 +75,6 @@ export default function Header() {
               </Link>
             )}
           </div>
-
-          {/* Right side: Board selector only */}
-          {hasBoards && (
-            <div className="pb-1">
-              {/* Board Selector */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 gap-1 font-medium px-1.5 sm:px-2 text-xs hover:bg-secondary/20"
-                    >
-                      <LayoutGrid className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                      <span className="hidden sm:inline max-w-[80px] truncate">
-                        {currentBoard?.name || 'Board'}
-                      </span>
-                      <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[180px]">
-                    <DropdownMenuLabel>Boards</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {boards.map((board) => (
-                      <DropdownMenuItem
-                        key={board.id}
-                        onClick={() => setCurrentBoard(board)}
-                        className={currentBoard?.id === board.id ? 'bg-accent/20' : ''}
-                      >
-                        <LayoutGrid className="w-4 h-4 mr-2 shrink-0" />
-                        <span className="truncate">{board.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-          )}
         </nav>
       )}
     </header>

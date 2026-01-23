@@ -140,7 +140,7 @@ export function MonthlyStatsSection({ editable, currentUserId }: MonthlyStatsSec
                   className={`w-full flex items-center gap-3 p-4 text-left transition-all border-2 border-foreground shadow-[2px_2px_0px_hsl(0_0%_5%)] hover:shadow-[3px_3px_0px_hsl(0_0%_5%)] hover:-translate-x-px hover:-translate-y-px ${
                     isClockedIn ? 'bg-[hsl(140_70%_90%)]' : 'bg-card hover:bg-muted'
                   }`}
-                  onClick={() => navigate({ to: '/admin/students/$userId', params: { userId: stat.userId } })}
+                  onClick={() => navigate({ to: '/students/$userId', params: { userId: stat.userId } })}
                 >
                   {content}
                 </button>
