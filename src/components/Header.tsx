@@ -62,17 +62,23 @@ export default function Header() {
 
         {/* Org/Board Selector - only show if signed in and has orgs */}
         {isSignedIn && hasOrgs && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Organization Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 font-semibold">
-                  <Building2 className="w-4 h-4" />
-                  {currentOrg?.name || 'Select Org'}
-                  <ChevronDown className="w-3 h-3 opacity-50" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3 text-xs sm:text-sm"
+                >
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="hidden xs:inline max-w-[60px] sm:max-w-[100px] truncate">
+                    {currentOrg?.name || 'Org'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="center">
+              <DropdownMenuContent align="center" className="min-w-[180px]">
                 <DropdownMenuLabel>Organizations</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {organizations.map((org) => (
@@ -81,10 +87,10 @@ export default function Header() {
                     onClick={() => setCurrentOrg(org)}
                     className={currentOrg?.id === org.id ? 'bg-accent' : ''}
                   >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    {org.name}
+                    <Building2 className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{org.name}</span>
                     {org.role === 'admin' && (
-                      <Shield className="w-3 h-3 ml-auto text-accent" />
+                      <Shield className="w-3 h-3 ml-auto text-accent shrink-0" />
                     )}
                   </DropdownMenuItem>
                 ))}
@@ -95,13 +101,19 @@ export default function Header() {
             {hasBoards && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 font-semibold">
-                    <LayoutGrid className="w-4 h-4" />
-                    {currentBoard?.name || 'Select Board'}
-                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3 text-xs sm:text-sm"
+                  >
+                    <LayoutGrid className="w-4 h-4 shrink-0" />
+                    <span className="hidden xs:inline max-w-[60px] sm:max-w-[100px] truncate">
+                      {currentBoard?.name || 'Board'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center">
+                <DropdownMenuContent align="center" className="min-w-[180px]">
                   <DropdownMenuLabel>Boards</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {boards.map((board) => (
@@ -110,8 +122,8 @@ export default function Header() {
                       onClick={() => setCurrentBoard(board)}
                       className={currentBoard?.id === board.id ? 'bg-accent' : ''}
                     >
-                      <LayoutGrid className="w-4 h-4 mr-2" />
-                      {board.name}
+                      <LayoutGrid className="w-4 h-4 mr-2 shrink-0" />
+                      <span className="truncate">{board.name}</span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
