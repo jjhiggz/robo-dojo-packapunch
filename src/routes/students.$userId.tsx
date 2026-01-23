@@ -185,13 +185,14 @@ function StudentProfilePage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
-  const { currentBoard, isLoading: boardLoading } = useBoardContext()
+  const { currentBoard, isOrgAdmin, isLoading: boardLoading } = useBoardContext()
   const [currentWeek, setCurrentWeek] = useState(new Date())
 
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
 
-  // Users can only view their own profile
+  // Users can view their own profile, or org admins can view anyone's
   const isOwnProfile = user?.id === userId
+  const canView = isOwnProfile || isOrgAdmin
 
   // Get student info from a punch record
   const { data: recentPunches = [] } = useQuery({
@@ -234,8 +235,8 @@ function StudentProfilePage() {
     return null
   }
 
-  // Redirect if trying to view someone else's profile
-  if (!isOwnProfile) {
+  // Redirect if trying to view someone else's profile and not an admin
+  if (!canView) {
     navigate({ to: '/' })
     return null
   }
@@ -277,7 +278,7 @@ function StudentProfilePage() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {studentInfo.userName || 'Unknown Student'}
+            {isOwnProfile ? 'My Profile' : studentInfo.userName || 'Unknown Student'}
           </h1>
           <p className="text-muted-foreground">
             {currentBoard.name} - {studentInfo.userEmail || userId}
@@ -307,9 +308,11 @@ function StudentProfilePage() {
       {/* Weekly Punch Card (Read-only) */}
       <WeeklyPunchCard userId={userId} boardId={currentBoard.id} weekStart={weekStart} />
 
-      <div className="mt-4 text-center text-sm text-muted-foreground">
-        <p>This is a read-only view for accountability.</p>
-      </div>
+      {!isOrgAdmin && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          <p>This is a read-only view for accountability.</p>
+        </div>
+      )}
     </div>
   )
 }
