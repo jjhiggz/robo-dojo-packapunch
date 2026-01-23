@@ -1,8 +1,8 @@
 import { useUser } from '@clerk/clerk-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowLeft, AlertCircle, Edit, Trash2, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -13,172 +13,46 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { calculateHoursFromPunches, getPunchHistory } from '@/server/punches'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { getPunchHistory, updatePunch, deletePunch, createPunch } from '@/server/punches'
 import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/students/$userId')({
   component: StudentProfilePage,
 })
 
-const formatTime = (date: Date | string) => {
-  return new Date(date).toLocaleTimeString('en-US', {
+const formatDateTime = (date: Date | string) => {
+  const d = new Date(date)
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   })
 }
 
-const formatHours = (hours: number) => {
-  const h = Math.floor(hours)
-  const m = Math.round((hours - h) * 60)
-  if (h === 0 && m === 0) return '0h'
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
-
-const getWeekStart = (date: Date) => {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day
-  d.setDate(diff)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-const getWeekDays = (weekStart: Date) => {
-  const days = []
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(weekStart)
-    day.setDate(day.getDate() + i)
-    days.push(day)
-  }
-  return days
-}
-
-function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; boardId: number; weekStart: Date }) {
-  const weekEnd = useMemo(() => {
-    const end = new Date(weekStart)
-    end.setDate(end.getDate() + 6)
-    end.setHours(23, 59, 59, 999)
-    return end
-  }, [weekStart])
-
-  const { data: punches = [], isLoading } = useQuery({
-    queryKey: ['punchHistory', userId, boardId, weekStart.toISOString(), weekEnd.toISOString()],
-    queryFn: () =>
-      getPunchHistory({
-        data: {
-          userId,
-          boardId,
-          startDate: weekStart.toISOString(),
-          endDate: weekEnd.toISOString(),
-        },
-      }),
-  })
-
-  const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart])
-
-  // Group punches by day
-  const punchesByDay = useMemo(() => {
-    const grouped = new Map<string, typeof punches>()
-    for (const day of weekDays) {
-      const dateKey = day.toISOString().split('T')[0]
-      grouped.set(dateKey, [])
-    }
-    for (const p of punches) {
-      const dateKey = new Date(p.timestamp).toISOString().split('T')[0]
-      const dayPunches = grouped.get(dateKey)
-      if (dayPunches) {
-        dayPunches.push(p)
-      }
-    }
-    return grouped
-  }, [punches, weekDays])
-
-  const totalWeekHours = useMemo(() => calculateHoursFromPunches(punches), [punches])
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          Loading punch card...
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Weekly Punch Card
-          </span>
-          <span className="text-2xl">{formatHours(totalWeekHours)}</span>
-        </CardTitle>
-        <CardDescription>
-          {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          {' - '}
-          {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Day</TableHead>
-              <TableHead>In</TableHead>
-              <TableHead>Out</TableHead>
-              <TableHead>In</TableHead>
-              <TableHead>Out</TableHead>
-              <TableHead className="text-right">Hours</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {weekDays.map((day) => {
-              const dateKey = day.toISOString().split('T')[0]
-              const dayPunches = punchesByDay.get(dateKey) || []
-              const sortedPunches = [...dayPunches].sort(
-                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-              )
-              const dayHours = calculateHoursFromPunches(dayPunches)
-              const isToday = dateKey === new Date().toISOString().split('T')[0]
-
-              return (
-                <TableRow key={dateKey} className={isToday ? 'bg-primary/5' : ''}>
-                  <TableCell className="font-medium">
-                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
-                    {isToday && <span className="ml-1 text-xs text-primary">(today)</span>}
-                  </TableCell>
-                  {[0, 1, 2, 3].map((idx) => {
-                    const punch = sortedPunches[idx]
-                    return (
-                      <TableCell key={idx}>
-                        {punch ? (
-                          <span className="text-sm">{formatTime(punch.timestamp)}</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )
-                  })}
-                  <TableCell className="text-right font-medium">
-                    {dayHours > 0 ? formatHours(dayHours) : '—'}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-            <TableRow className="font-bold bg-muted/50">
-              <TableCell colSpan={5}>Total</TableCell>
-              <TableCell className="text-right">{formatHours(totalWeekHours)}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  )
+interface PunchFormData {
+  date: string
+  time: string
+  type: 'in' | 'out'
 }
 
 function StudentProfilePage() {
@@ -186,17 +60,22 @@ function StudentProfilePage() {
   const navigate = useNavigate()
   const { userId } = Route.useParams()
   const { currentBoard, isOrgAdmin, isLoading: boardLoading } = useBoardContext()
-  const [currentWeek, setCurrentWeek] = useState(new Date())
+  const queryClient = useQueryClient()
 
-  const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
+  const [editingPunch, setEditingPunch] = useState<{ id: number; data: PunchFormData } | null>(null)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [addFormData, setAddFormData] = useState<PunchFormData>({
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    type: 'in',
+  })
 
   // Users can view their own profile, or org admins can view anyone's
   const isOwnProfile = user?.id === userId
   const canView = isOwnProfile || isOrgAdmin
 
-  // Get student info from a punch record
-  const { data: recentPunches = [] } = useQuery({
-    queryKey: ['studentInfo', userId, currentBoard?.id],
+  const { data: punches = [], isLoading: punchesLoading } = useQuery({
+    queryKey: ['punchHistory', userId, currentBoard?.id],
     queryFn: () =>
       getPunchHistory({
         data: {
@@ -206,26 +85,87 @@ function StudentProfilePage() {
           endDate: new Date().toISOString(),
         },
       }),
-    select: (data) => data.slice(0, 1),
-    enabled: !!currentBoard?.id,
+    enabled: !!currentBoard?.id && canView,
   })
 
-  const studentInfo = recentPunches?.[0] || { userName: null, userEmail: null }
+  // Get student info from first punch
+  const studentInfo = punches[0] || { userName: null, userEmail: null }
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newWeek = new Date(currentWeek)
-    newWeek.setDate(newWeek.getDate() + (direction === 'next' ? 7 : -7))
-    setCurrentWeek(newWeek)
+  const updateMutation = useMutation({
+    mutationFn: ({ punchId, timestamp, type }: { punchId: number; timestamp: string; type?: 'in' | 'out' }) =>
+      updatePunch({ data: { punchId, timestamp, type } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, currentBoard?.id] })
+      setEditingPunch(null)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (punchId: number) => deletePunch({ data: punchId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, currentBoard?.id] })
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: ({ timestamp, type }: { timestamp: string; type: 'in' | 'out' }) =>
+      createPunch({
+        data: {
+          userId,
+          boardId: currentBoard!.id,
+          timestamp,
+          type,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, currentBoard?.id] })
+      setAddDialogOpen(false)
+      setAddFormData({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        type: 'in',
+      })
+    },
+  })
+
+  const handleEdit = (punch: any) => {
+    const date = new Date(punch.timestamp)
+    setEditingPunch({
+      id: punch.id,
+      data: {
+        date: date.toISOString().split('T')[0],
+        time: date.toTimeString().slice(0, 5),
+        type: punch.type,
+      },
+    })
   }
 
-  const goToCurrentWeek = () => {
-    setCurrentWeek(new Date())
+  const handleSaveEdit = () => {
+    if (!editingPunch) return
+
+    const timestamp = new Date(`${editingPunch.data.date}T${editingPunch.data.time}:00`).toISOString()
+    updateMutation.mutate({
+      punchId: editingPunch.id,
+      timestamp,
+      type: editingPunch.data.type,
+    })
+  }
+
+  const handleDelete = (punchId: number) => {
+    if (confirm('Are you sure you want to delete this punch?')) {
+      deleteMutation.mutate(punchId)
+    }
+  }
+
+  const handleAdd = () => {
+    const timestamp = new Date(`${addFormData.date}T${addFormData.time}:00`).toISOString()
+    createMutation.mutate({ timestamp, type: addFormData.type })
   }
 
   if (!isLoaded || boardLoading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto flex items-center justify-center">
+        <div className="text-muted-foreground font-bold uppercase">Loading...</div>
       </div>
     )
   }
@@ -235,7 +175,6 @@ function StudentProfilePage() {
     return null
   }
 
-  // Redirect if trying to view someone else's profile and not an admin
   if (!canView) {
     navigate({ to: '/' })
     return null
@@ -243,7 +182,7 @@ function StudentProfilePage() {
 
   if (!currentBoard) {
     return (
-      <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
+      <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/">
@@ -251,7 +190,7 @@ function StudentProfilePage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">My Profile</h1>
+            <h1 className="text-2xl font-bold">Profile</h1>
           </div>
         </div>
         <Card className="bg-muted/50">
@@ -259,7 +198,7 @@ function StudentProfilePage() {
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-bold mb-2">No Board Selected</h3>
             <p className="text-muted-foreground">
-              Please select an organization and board from the header to view your profile.
+              Please select a board to view time tracking data.
             </p>
           </CardContent>
         </Card>
@@ -267,46 +206,242 @@ function StudentProfilePage() {
     )
   }
 
+  // Sort punches by date descending (newest first)
+  const sortedPunches = [...punches].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+
   return (
-    <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
+    <div className="min-h-[calc(100vh-80px)] p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/">
+          <Link to="/board">
             <ArrowLeft className="w-5 h-5" />
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {isOwnProfile ? 'My Profile' : studentInfo.userName || 'Unknown Student'}
+          <h1 className="text-2xl sm:text-3xl font-extrabold uppercase">
+            {isOwnProfile ? 'My Time Tracking' : studentInfo.userName || 'Member Time Tracking'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-medium">
             {currentBoard.name} - {studentInfo.userEmail || userId}
           </p>
         </div>
+        {isOrgAdmin && (
+          <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Punch
+          </Button>
+        )}
       </div>
 
-      {/* Week Navigation */}
-      <Card className="mb-6">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigateWeek('prev')}>
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="text-center">
-              <Button variant="link" size="sm" onClick={goToCurrentWeek}>
-                Go to current week
-              </Button>
+      {/* Punches Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-extrabold uppercase">Punch History</CardTitle>
+          <CardDescription className="font-medium">
+            {isOrgAdmin ? 'View and edit all time punches' : 'View your time tracking history'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {punchesLoading ? (
+            <div className="text-center py-12 text-muted-foreground font-bold uppercase">Loading...</div>
+          ) : sortedPunches.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground font-medium">
+              No punches recorded yet.
             </div>
-            <Button variant="ghost" size="icon" onClick={() => navigateWeek('next')}>
-              <ChevronRight className="w-5 h-5" />
-            </Button>
-          </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Type</TableHead>
+                    {isOrgAdmin && <TableHead className="text-right">Actions</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedPunches.map((punch) => (
+                    <TableRow key={punch.id}>
+                      <TableCell className="font-medium">
+                        {formatDateTime(punch.timestamp)}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-3 py-1 border-2 border-foreground font-extrabold uppercase text-xs shadow-[2px_2px_0px_hsl(0_0%_5%)] ${
+                            punch.type === 'in'
+                              ? 'bg-[hsl(140_70%_85%)] text-[hsl(140_80%_20%)]'
+                              : 'bg-[hsl(0_70%_85%)] text-[hsl(0_80%_30%)]'
+                          }`}
+                        >
+                          {punch.type === 'in' ? 'IN' : 'OUT'}
+                        </span>
+                      </TableCell>
+                      {isOrgAdmin && (
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(punch)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(punch.id)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Weekly Punch Card (Read-only) */}
-      <WeeklyPunchCard userId={userId} boardId={currentBoard.id} weekStart={weekStart} />
+      {/* Edit Punch Dialog */}
+      <Dialog open={!!editingPunch} onOpenChange={() => setEditingPunch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-extrabold uppercase">Edit Punch</DialogTitle>
+            <DialogDescription className="font-medium">
+              Update the date, time, and type for this punch.
+            </DialogDescription>
+          </DialogHeader>
+          {editingPunch && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date" className="font-bold">Date</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editingPunch.data.date}
+                  onChange={(e) =>
+                    setEditingPunch({
+                      ...editingPunch,
+                      data: { ...editingPunch.data, date: e.target.value },
+                    })
+                  }
+                  className="border-2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time" className="font-bold">Time</Label>
+                <Input
+                  id="edit-time"
+                  type="time"
+                  value={editingPunch.data.time}
+                  onChange={(e) =>
+                    setEditingPunch({
+                      ...editingPunch,
+                      data: { ...editingPunch.data, time: e.target.value },
+                    })
+                  }
+                  className="border-2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-type" className="font-bold">Type</Label>
+                <Select
+                  value={editingPunch.data.type}
+                  onValueChange={(value: 'in' | 'out') =>
+                    setEditingPunch({
+                      ...editingPunch,
+                      data: { ...editingPunch.data, type: value },
+                    })
+                  }
+                >
+                  <SelectTrigger id="edit-type" className="border-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Punch In</SelectItem>
+                    <SelectItem value="out">Punch Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPunch(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Punch Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-extrabold uppercase">Add Punch</DialogTitle>
+            <DialogDescription className="font-medium">
+              Manually add a punch in or out record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-date" className="font-bold">Date</Label>
+              <Input
+                id="add-date"
+                type="date"
+                value={addFormData.date}
+                onChange={(e) => setAddFormData({ ...addFormData, date: e.target.value })}
+                className="border-2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-time" className="font-bold">Time</Label>
+              <Input
+                id="add-time"
+                type="time"
+                value={addFormData.time}
+                onChange={(e) => setAddFormData({ ...addFormData, time: e.target.value })}
+                className="border-2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-type" className="font-bold">Type</Label>
+              <Select
+                value={addFormData.type}
+                onValueChange={(value: 'in' | 'out') =>
+                  setAddFormData({ ...addFormData, type: value })
+                }
+              >
+                <SelectTrigger id="add-type" className="border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in">Punch In</SelectItem>
+                  <SelectItem value="out">Punch Out</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAdd} disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Adding...' : 'Add Punch'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {!isOrgAdmin && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
