@@ -1,6 +1,6 @@
 import { useUser } from '@clerk/clerk-react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Building2, ChevronDown, LayoutGrid, Shield } from 'lucide-react'
+import { Building2, ChevronDown, LayoutGrid } from 'lucide-react'
 import { useBoardContext } from '@/lib/board-context'
 import ClerkHeader from '../integrations/clerk/header-user.tsx'
 import {
@@ -31,14 +31,11 @@ export default function Header() {
   const { isSignedIn } = useUser()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  const { 
-    organizations, 
-    currentOrg, 
-    currentBoard, 
-    boards, 
-    isOrgAdmin,
-    setCurrentOrg, 
-    setCurrentBoard 
+  const {
+    organizations,
+    currentBoard,
+    boards,
+    setCurrentBoard
   } = useBoardContext()
 
   const hasOrgs = organizations.length > 0
