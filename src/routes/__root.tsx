@@ -9,6 +9,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import Header from '../components/Header'
 
 import ClerkProvider from '../integrations/clerk/provider'
+import { BoardProvider } from '../lib/board-context'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
@@ -62,23 +63,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClerkProvider>
-          <Header />
-          {children}
-          <footer className="py-6 text-center text-sm text-muted-foreground border-t border-primary/30 mt-8">
-            <span className="font-semibold tracking-widest uppercase text-glow-pink text-primary/70">packapunch</span>
-          </footer>
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-              TanStackQueryDevtools,
-            ]}
-          />
+          <BoardProvider>
+            <Header />
+            {children}
+            <footer className="py-6 text-center text-sm text-muted-foreground border-t border-primary/30 mt-8">
+              <span className="font-semibold tracking-widest uppercase text-glow-pink text-primary/70">packapunch</span>
+            </footer>
+            <TanStackDevtools
+              config={{
+                position: 'bottom-right',
+              }}
+              plugins={[
+                {
+                  name: 'Tanstack Router',
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+                TanStackQueryDevtools,
+              ]}
+            />
+          </BoardProvider>
         </ClerkProvider>
         <Scripts />
       </body>

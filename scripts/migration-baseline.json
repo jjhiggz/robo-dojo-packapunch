@@ -1,0 +1,186 @@
+{
+  "capturedAt": "2026-01-23T02:55:42.093Z",
+  "totalPunchCount": 88,
+  "totalHoursAllUsers": 179.22148444444443,
+  "uniqueUserCount": 21,
+  "adminCount": 3,
+  "nonAdminCount": 18,
+  "users": [
+    {
+      "userId": "user_38ORySm2fqwpHAQu4H0Dlwthry9",
+      "userName": "N y",
+      "userEmail": "speedemon2622@icloud.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 15.418739166666667
+    },
+    {
+      "userId": "user_38OSzBPL6Lvk8lrOqsAyCHcnTqP",
+      "userName": "Janet Young",
+      "userEmail": "janyoumd@gmail.com",
+      "punchCount": 4,
+      "isAdmin": true,
+      "totalHours": 15.266666666666667
+    },
+    {
+      "userId": "user_38OX1xAaqTKC7rv4gDMqljMgKEn",
+      "userName": "Jesus Lopez-Villarreal",
+      "userEmail": "jesuslv2060@gmail.com",
+      "punchCount": 6,
+      "isAdmin": false,
+      "totalHours": 14.843121944444444
+    },
+    {
+      "userId": "user_38P6vXd5zIYvXXS0DP1zAkdn54E",
+      "userName": "Willow Boucher",
+      "userEmail": "willowboucher2011@gmail.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 13.588302222222222
+    },
+    {
+      "userId": "user_38P7BIrF5lRnyRMMqF4rM39TqWH",
+      "userName": "Amelai Stockton",
+      "userEmail": "ameliabstockton615@gmail.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 13.155345833333334
+    },
+    {
+      "userId": "user_38OSxoFGUS1u0uQMdqC3mr6BYSu",
+      "userName": "Devanshi Chaudhari",
+      "userEmail": "devanshichaudhari13@gmail.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 12.063752777777777
+    },
+    {
+      "userId": "user_38OZJXK6AZ9gH8NAQLakyQ93S6J",
+      "userName": "Zach Young",
+      "userEmail": "youngz7919@gmail.com",
+      "punchCount": 6,
+      "isAdmin": false,
+      "totalHours": 11.465533888888888
+    },
+    {
+      "userId": "user_38OTTY1kyMk8OlEaW5jhPdeCYmu",
+      "userName": "Jacob Smith",
+      "userEmail": "jmsmith0904@gmail.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 10.9979925
+    },
+    {
+      "userId": "user_38OZccNVScBz9YOJje2SA2VmUfJ",
+      "userName": "Khang Tran",
+      "userEmail": "doneekhang@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 10.056645833333333
+    },
+    {
+      "userId": "user_38OSnsVzvII8IJtC4JILkLcbiCc",
+      "userName": "Noah Zhang",
+      "userEmail": "noahszhang@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 9.557768611111111
+    },
+    {
+      "userId": "user_38OTPmIHogp0ufk3tQaaeZNhVsF",
+      "userName": "Diana Dietz",
+      "userEmail": "dianabdietz@gmail.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 8.917866111111111
+    },
+    {
+      "userId": "user_38Oy6tQ4c9Lrz4rcYSv9Lv5Dpsk",
+      "userName": "Brad  Rottenborn",
+      "userEmail": "brad.rottenborn@icloud.com",
+      "punchCount": 4,
+      "isAdmin": false,
+      "totalHours": 8.082093888888888
+    },
+    {
+      "userId": "user_38OTalc8QbojVq04kxQf2myWy45",
+      "userName": "Kaylee Warren",
+      "userEmail": "random.51609@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 6.952054166666667
+    },
+    {
+      "userId": "user_38OX5cvRN3FDNEELOkPEBo5ilAd",
+      "userName": "John Finney",
+      "userEmail": "johnrf.11@icloud.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 6.600366111111111
+    },
+    {
+      "userId": "user_38PAsJmO4YLTCkJYXMqozyg6Mxu",
+      "userName": "David Conner",
+      "userEmail": "aionfork@gmail.com",
+      "punchCount": 4,
+      "isAdmin": true,
+      "totalHours": 6.523852222222223
+    },
+    {
+      "userId": "user_38Oxy9pjFNgIIP32GZt35S7wOwP",
+      "userName": "Jamal Millner",
+      "userEmail": "millnerxxxx@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 6.050196111111111
+    },
+    {
+      "userId": "user_38MZ3uGZOmeiCPjtTPmQ8yQVRGp",
+      "userName": "Jonathan Higger",
+      "userEmail": "jonathan.higger@gmail.com",
+      "punchCount": 22,
+      "isAdmin": true,
+      "totalHours": 5.301465277777778
+    },
+    {
+      "userId": "user_38OU8VASdhbxfkr693eysLwaRIA",
+      "userName": "Violet Jane",
+      "userEmail": "vijane09@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 3.066666666666667
+    },
+    {
+      "userId": "user_38Xo7EpCwyCz7FIMs7DNhv31pOJ",
+      "userName": "Max Weiss",
+      "userEmail": "maxwellbweiss@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 1.3092641666666667
+    },
+    {
+      "userId": "user_38XU5eXpL6VF8FgnfZdZsrtCE8U",
+      "userName": "OtherJon Higger",
+      "userEmail": "jon@connectedfi.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 0.003246111111111111
+    },
+    {
+      "userId": "user_38XxbJSRAQfjZoZfhnVoG2fUNij",
+      "userName": "chandler Day",
+      "userEmail": "chandlerday621@gmail.com",
+      "punchCount": 2,
+      "isAdmin": false,
+      "totalHours": 0.0005441666666666666
+    }
+  ],
+  "adminEmails": [
+    "jonathan.higger@gmail.com",
+    "aionfork@gmail.com",
+    "armstrong.dan237@gmail.com",
+    "tarheelwinetraders@gmail.com",
+    "janyoumd@gmail.com",
+    "semoyer@vt.edu"
+  ]
+}

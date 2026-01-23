@@ -1,4 +1,3 @@
-import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, LogIn, LogOut, Plus, Trash2 } from 'lucide-react'
@@ -27,22 +26,19 @@ import {
   addPunch,
   deletePunch,
   deletePunches,
-  getPunchHistory,
+  getUserPunchHistory,
   updatePunch,
 } from '@/server/punches'
-import { ADMIN_EMAILS } from '@/lib/constants'
+import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/admin/students/$userId')({
   component: StudentDetailPage,
 })
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface SerializedPunch {
   id: number
   userId: string
+  boardId: number | null
   userName: string | null
   userEmail: string | null
   type: string
@@ -52,6 +48,7 @@ interface SerializedPunch {
 interface NormalizedPunch {
   id: number
   userId: string
+  boardId: number | null
   userName: string | null
   userEmail: string | null
   type: 'in' | 'out'
@@ -63,10 +60,6 @@ interface PunchFormData {
   time: string
   type: 'in' | 'out'
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Utility functions
-// ─────────────────────────────────────────────────────────────────────────────
 
 const toDate = (value: string | Date): Date =>
   value instanceof Date ? value : new Date(value)
@@ -168,10 +161,6 @@ const punchToFormData = (punch: NormalizedPunch): PunchFormData => ({
   type: punch.type,
 })
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Punch Modal Component
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface PunchModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -262,18 +251,15 @@ const PunchModal = ({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Weekly Punch List Component
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface WeeklyPunchListProps {
   userId: string
+  boardId: number
   userName: string | null
   userEmail: string | null
   weekStart: Date
 }
 
-const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunchListProps) => {
+const WeeklyPunchList = ({ userId, boardId, userName, userEmail, weekStart }: WeeklyPunchListProps) => {
   const queryClient = useQueryClient()
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editingPunch, setEditingPunch] = useState<NormalizedPunch | null>(null)
@@ -283,11 +269,12 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart])
 
   const { data: punches = [], isLoading } = useQuery({
-    queryKey: ['punchHistory', userId, weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ['punchHistory', userId, boardId, weekStart.toISOString(), weekEnd.toISOString()],
     queryFn: () =>
-      getPunchHistory({
+      getUserPunchHistory({
         data: {
           userId,
+          boardId,
           startDate: weekStart.toISOString(),
           endDate: weekEnd.toISOString(),
         },
@@ -297,7 +284,6 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
 
   const totalWeekHours = useMemo(() => calculateHoursFromPunches(punches), [punches])
 
-  // Selection helpers
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -328,6 +314,7 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
       addPunch({
         data: {
           userId,
+          boardId,
           userName: userName ?? undefined,
           userEmail: userEmail ?? undefined,
           type,
@@ -335,7 +322,7 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
         },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
       setAddModalOpen(false)
       setFormData(getDefaultFormData())
     },
@@ -345,7 +332,7 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
     mutationFn: ({ punchId, timestamp, type }: { punchId: number; timestamp: string; type: 'in' | 'out' }) =>
       updatePunch({ data: { punchId, timestamp, type } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
       setEditingPunch(null)
     },
   })
@@ -353,14 +340,14 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const deleteMutation = useMutation({
     mutationFn: (punchId: number) => deletePunch({ data: punchId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
     },
   })
 
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: number[]) => deletePunches({ data: ids }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId] })
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
       clearSelection()
     },
   })
@@ -386,8 +373,8 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   const handleSaveEdit = () => {
     if (!editingPunch) return
     const timestamp = combineDateAndTime(formData.date, formData.time)
-      updateMutation.mutate({
-        punchId: editingPunch.id,
+    updateMutation.mutate({
+      punchId: editingPunch.id,
       timestamp: timestamp.toISOString(),
       type: formData.type,
     })
@@ -418,21 +405,20 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
 
   return (
     <>
-    <Card>
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3">
-            {/* Title and date range */}
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                   Weekly Punches
-        </CardTitle>
+                </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          {' - '}
+                  {' - '}
                   {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </CardDescription>
+                </CardDescription>
               </div>
               <div className="text-right">
                 <div className="text-xl sm:text-2xl font-bold">{formatHours(totalWeekHours)}</div>
@@ -440,7 +426,6 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
               </div>
             </div>
             
-            {/* Actions row */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -460,18 +445,17 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
               <Button onClick={handleOpenAddModal} size="sm">
                 <Plus className="w-4 h-4 sm:mr-1" />
                 <span className="hidden sm:inline">Add Punch</span>
-                            </Button>
-                          </div>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
-          {/* Bulk actions bar */}
           {selectedIds.size > 0 && (
             <div className="mb-3 p-2 sm:p-3 bg-muted rounded-lg flex items-center justify-between gap-2">
               <Button variant="ghost" size="sm" onClick={clearSelection} className="text-xs sm:text-sm">
                 Cancel
-                            </Button>
-                            <Button
+              </Button>
+              <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleBulkDelete}
@@ -480,15 +464,15 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
               >
                 <Trash2 className="w-4 h-4 sm:mr-1" />
                 <span className="hidden sm:inline">{bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}</span>
-                            </Button>
-                          </div>
+              </Button>
+            </div>
           )}
 
           {punches.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground text-sm">
               No punches recorded this week
-                          </div>
-                        ) : (
+            </div>
+          ) : (
             <div className="space-y-2">
               {punches.map((punch) => (
                 <div
@@ -501,7 +485,6 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                         : 'bg-red-50 dark:bg-red-950/20'
                   }`}
                 >
-                  {/* Checkbox */}
                   <Checkbox
                     checked={selectedIds.has(punch.id)}
                     onCheckedChange={() => toggleSelect(punch.id)}
@@ -509,13 +492,11 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                     className="shrink-0"
                   />
                   
-                  {/* Main content - clickable */}
                   <button
                     type="button"
                     className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 text-left"
                     onClick={() => handleOpenEditModal(punch)}
                   >
-                    {/* Type icon */}
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                         punch.type === 'in'
@@ -530,7 +511,6 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                       )}
                     </div>
                     
-                    {/* Date and time */}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">
                         {formatDate(punch.timestamp)}
@@ -541,7 +521,6 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                     </div>
                   </button>
                   
-                  {/* Delete button */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -549,27 +528,25 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
                     onClick={() => handleDelete(punch.id)}
                   >
                     <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+                  </Button>
+                </div>
               ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Add Punch Modal */}
       <PunchModal
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
         title="Add Punch"
-        description="Add a new punch entry for this student."
+        description="Add a new punch entry for this member."
         formData={formData}
         onFormChange={setFormData}
         onSave={handleSaveAdd}
         isSaving={addMutation.isPending}
       />
 
-      {/* Edit Punch Modal */}
       <PunchModal
         open={editingPunch !== null}
         onOpenChange={(open) => !open && setEditingPunch(null)}
@@ -584,26 +561,21 @@ const WeeklyPunchList = ({ userId, userName, userEmail, weekStart }: WeeklyPunch
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page Component
-// ─────────────────────────────────────────────────────────────────────────────
-
 function StudentDetailPage() {
-  const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
+  const { currentBoard, isOrgAdmin, isLoading: boardLoading } = useBoardContext()
   const [currentWeek, setCurrentWeek] = useState(new Date())
 
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
 
   const { data: studentInfo } = useQuery({
-    queryKey: ['studentInfo', userId],
+    queryKey: ['studentInfo', userId, currentBoard?.id],
     queryFn: () =>
-      getPunchHistory({
+      getUserPunchHistory({
         data: {
           userId,
+          boardId: currentBoard!.id,
           startDate: new Date(0).toISOString(),
           endDate: new Date().toISOString(),
         },
@@ -614,6 +586,7 @@ function StudentDetailPage() {
         ? { userName: firstPunch.userName ?? null, userEmail: firstPunch.userEmail ?? null }
         : { userName: null, userEmail: null }
     },
+    enabled: !!currentBoard?.id,
   })
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -626,7 +599,7 @@ function StudentDetailPage() {
 
   const goToCurrentWeek = () => setCurrentWeek(new Date())
 
-  if (!isLoaded) {
+  if (boardLoading) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -634,19 +607,13 @@ function StudentDetailPage() {
     )
   }
 
-  if (!isSignedIn) {
-    navigate({ to: '/login' })
-    return null
-  }
-
-  if (!isAdmin) {
+  if (!isOrgAdmin || !currentBoard) {
     navigate({ to: '/' })
     return null
   }
 
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Button variant="ghost" size="icon" className="shrink-0" asChild>
           <Link to="/admin">
@@ -655,7 +622,7 @@ function StudentDetailPage() {
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg sm:text-2xl font-bold truncate">
-            {studentInfo?.userName || 'Unknown Student'}
+            {studentInfo?.userName || 'Unknown Member'}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">
             {studentInfo?.userEmail || userId}
@@ -663,7 +630,6 @@ function StudentDetailPage() {
         </div>
       </div>
 
-      {/* Week Navigation */}
       <Card className="mb-4">
         <CardContent className="py-3">
           <div className="flex items-center justify-between">
@@ -672,7 +638,7 @@ function StudentDetailPage() {
             </Button>
             <Button variant="link" size="sm" className="text-xs sm:text-sm" onClick={goToCurrentWeek}>
               Current week
-              </Button>
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('next')}>
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -680,9 +646,9 @@ function StudentDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Weekly Punch List */}
       <WeeklyPunchList
         userId={userId}
+        boardId={currentBoard.id}
         userName={studentInfo?.userName ?? null}
         userEmail={studentInfo?.userEmail ?? null}
         weekStart={weekStart}

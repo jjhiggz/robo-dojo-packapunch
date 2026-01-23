@@ -1,8 +1,17 @@
 import { useUser } from '@clerk/clerk-react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Shield } from 'lucide-react'
-import { ADMIN_EMAILS } from '@/lib/constants'
+import { Building2, ChevronDown, LayoutGrid, Shield } from 'lucide-react'
+import { useBoardContext } from '@/lib/board-context'
 import ClerkHeader from '../integrations/clerk/header-user.tsx'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
 
 // Boxing glove SVG icon component
 const BoxingGlove = ({ className }: { className?: string }) => (
@@ -19,12 +28,21 @@ const BoxingGlove = ({ className }: { className?: string }) => (
 )
 
 export default function Header() {
-  const { user, isSignedIn } = useUser()
+  const { isSignedIn } = useUser()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
+  const { 
+    organizations, 
+    currentOrg, 
+    currentBoard, 
+    boards, 
+    isOrgAdmin,
+    setCurrentOrg, 
+    setCurrentBoard 
+  } = useBoardContext()
 
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
+  const hasOrgs = organizations.length > 0
+  const hasBoards = boards.length > 0
 
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b-2 border-primary/50 relative overflow-hidden">
@@ -41,6 +59,67 @@ export default function Header() {
             PACKAPUNCH
           </h1>
         </Link>
+
+        {/* Org/Board Selector - only show if signed in and has orgs */}
+        {isSignedIn && hasOrgs && (
+          <div className="flex items-center gap-2">
+            {/* Organization Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 font-semibold">
+                  <Building2 className="w-4 h-4" />
+                  {currentOrg?.name || 'Select Org'}
+                  <ChevronDown className="w-3 h-3 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {organizations.map((org) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => setCurrentOrg(org)}
+                    className={currentOrg?.id === org.id ? 'bg-accent' : ''}
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    {org.name}
+                    {org.role === 'admin' && (
+                      <Shield className="w-3 h-3 ml-auto text-accent" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Board Selector */}
+            {hasBoards && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 font-semibold">
+                    <LayoutGrid className="w-4 h-4" />
+                    {currentBoard?.name || 'Select Board'}
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  <DropdownMenuLabel>Boards</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {boards.map((board) => (
+                    <DropdownMenuItem
+                      key={board.id}
+                      onClick={() => setCurrentBoard(board)}
+                      className={currentBoard?.id === board.id ? 'bg-accent' : ''}
+                    >
+                      <LayoutGrid className="w-4 h-4 mr-2" />
+                      {board.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
+
         <ClerkHeader />
       </div>
 
@@ -57,11 +136,11 @@ export default function Header() {
           >
             My Hours
           </Link>
-          {isAdmin && (
+          {isOrgAdmin && (
             <Link
               to="/admin"
               className={`px-5 py-3 text-sm font-semibold uppercase tracking-wider transition-all duration-200 flex items-center gap-2 rounded-t border-2 border-b-0 ${
-                currentPath === '/admin'
+                currentPath.startsWith('/admin')
                   ? 'bg-card text-accent border-accent shadow-neon-purple translate-y-[2px]'
                   : 'bg-background/50 text-muted-foreground border-muted hover:text-accent hover:border-accent/50 hover:shadow-neon-purple'
               }`}

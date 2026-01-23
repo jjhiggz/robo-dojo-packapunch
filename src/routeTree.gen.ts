@@ -18,6 +18,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as StudentsUserIdRouteImport } from './routes/students.$userId'
 import { Route as SignupSplatRouteImport } from './routes/signup.$'
 import { Route as LoginSplatRouteImport } from './routes/login.$'
+import { Route as AdminMembersRouteImport } from './routes/admin.members'
 import { Route as AdminStudentsUserIdRouteImport } from './routes/admin.students.$userId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -65,6 +66,11 @@ const LoginSplatRoute = LoginSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => LoginRoute,
 } as any)
+const AdminMembersRoute = AdminMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStudentsUserIdRoute = AdminStudentsUserIdRouteImport.update({
   id: '/students/$userId',
   path: '/students/$userId',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
+  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
+  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/login': typeof LoginRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
+  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/signup'
+    | '/admin/members'
     | '/login/$'
     | '/signup/$'
     | '/students/$userId'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/signup'
+    | '/admin/members'
     | '/login/$'
     | '/signup/$'
     | '/students/$userId'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/login'
     | '/signup'
+    | '/admin/members'
     | '/login/$'
     | '/signup/$'
     | '/students/$userId'
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginSplatRouteImport
       parentRoute: typeof LoginRoute
     }
+    '/admin/members': {
+      id: '/admin/members'
+      path: '/members'
+      fullPath: '/admin/members'
+      preLoaderRoute: typeof AdminMembersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/students/$userId': {
       id: '/admin/students/$userId'
       path: '/students/$userId'
@@ -230,11 +249,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminMembersRoute: typeof AdminMembersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStudentsUserIdRoute: typeof AdminStudentsUserIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminMembersRoute: AdminMembersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStudentsUserIdRoute: AdminStudentsUserIdRoute,
 }

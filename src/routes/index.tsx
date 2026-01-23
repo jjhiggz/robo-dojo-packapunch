@@ -1,11 +1,11 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Clock, LogIn, LogOut, Users } from 'lucide-react'
+import { Clock, LogIn, LogOut, Users, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAllUsersStatus, punch } from '@/server/punches'
-import { ADMIN_EMAILS } from '@/lib/constants'
+import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -19,18 +19,45 @@ const formatTime = (date: Date | string) => {
   })
 }
 
+function NoBoardSelected() {
+  return (
+    <Card className="bg-muted/50">
+      <CardContent className="py-12 text-center">
+        <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+        <h3 className="text-lg font-bold mb-2">No Board Selected</h3>
+        <p className="text-muted-foreground">
+          Please select an organization and board from the header to start tracking hours.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function NoOrganization() {
+  return (
+    <Card className="bg-muted/50">
+      <CardContent className="py-12 text-center">
+        <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+        <h3 className="text-lg font-bold mb-2">No Organization Access</h3>
+        <p className="text-muted-foreground">
+          You haven't been added to any organizations yet. Please contact an administrator to get access.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 function PunchBoard() {
   const { user } = useUser()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
+  const { currentBoard, isOrgAdmin, isLoading: boardLoading } = useBoardContext()
 
   const { data: usersStatus = [], isLoading } = useQuery({
-    queryKey: ['allUsersStatus'],
-    queryFn: () => getAllUsersStatus(),
+    queryKey: ['allUsersStatus', currentBoard?.id],
+    queryFn: () => getAllUsersStatus({ data: currentBoard!.id }),
     refetchInterval: 10000,
+    enabled: !!currentBoard?.id,
   })
 
   const punchMutation = useMutation({
@@ -38,13 +65,14 @@ function PunchBoard() {
       punch({
         data: {
           userId: user?.id ?? '',
+          boardId: currentBoard!.id,
           userName: user?.fullName || user?.firstName || undefined,
           userEmail: user?.emailAddresses[0]?.emailAddress,
           type,
         },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUsersStatus'] })
+      queryClient.invalidateQueries({ queryKey: ['allUsersStatus', currentBoard?.id] })
     },
   })
 
@@ -60,7 +88,7 @@ function PunchBoard() {
     punchMutation.mutate(isClockedIn ? 'out' : 'in')
   }
 
-  if (isLoading) {
+  if (boardLoading || isLoading) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground font-bold uppercase">
@@ -68,6 +96,10 @@ function PunchBoard() {
         </CardContent>
       </Card>
     )
+  }
+
+  if (!currentBoard) {
+    return <NoBoardSelected />
   }
 
   return (
@@ -171,7 +203,7 @@ function PunchBoard() {
                     <div className="w-3 h-3 bg-[hsl(140_80%_45%)] border-2 border-foreground shrink-0" />
                     
                     {/* Name */}
-                    <div className={`flex-1 font-bold truncate text-left ${isAdmin ? 'group-hover:underline underline-offset-2' : ''}`}>
+                    <div className={`flex-1 font-bold truncate text-left ${isOrgAdmin ? 'group-hover:underline underline-offset-2' : ''}`}>
                       {u.userName || u.userEmail?.split('@')[0] || 'Unknown'}
                     </div>
                     
@@ -182,7 +214,7 @@ function PunchBoard() {
                   </>
                 )
 
-                return isAdmin ? (
+                return isOrgAdmin ? (
                   <button
                     key={u.userId}
                     type="button"
@@ -210,8 +242,9 @@ function PunchBoard() {
 
 function App() {
   const { user, isSignedIn, isLoaded } = useUser()
+  const { organizations, currentBoard, isLoading: boardLoading } = useBoardContext()
 
-  if (!isLoaded) {
+  if (!isLoaded || boardLoading) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto flex items-center justify-center">
         <div className="text-muted-foreground font-bold uppercase tracking-wide">Loading...</div>
@@ -242,11 +275,29 @@ function App() {
     )
   }
 
+  // User is signed in but has no organizations
+  if (organizations.length === 0) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-extrabold uppercase tracking-tight">Hey, {user?.firstName || 'there'}!</h1>
+          <p className="text-muted-foreground font-medium">Ready to track your hours?</p>
+        </div>
+        <NoOrganization />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-extrabold uppercase tracking-tight">Hey, {user?.firstName || 'there'}!</h1>
-        <p className="text-muted-foreground font-medium">Ready to track your hours?</p>
+        <p className="text-muted-foreground font-medium">
+          {currentBoard 
+            ? `Tracking hours on ${currentBoard.name}`
+            : 'Ready to track your hours?'
+          }
+        </p>
       </div>
       
       <PunchBoard />

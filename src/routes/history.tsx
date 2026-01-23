@@ -1,11 +1,12 @@
 import { useUser } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { calculateHoursFromPunches, getPunchHistory, getWeeklySummary } from '@/server/punches'
+import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/history')({
   component: HistoryPage,
@@ -65,6 +66,7 @@ type ViewMode = 'week' | 'month'
 function HistoryPage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
+  const { currentBoard, isLoading: boardLoading } = useBoardContext()
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
 
@@ -83,28 +85,30 @@ function HistoryPage() {
   const endDate = viewMode === 'week' ? weekEnd : monthEnd
 
   const { data: punches = [], isLoading } = useQuery({
-    queryKey: ['punchHistory', user?.id, startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['punchHistory', user?.id, currentBoard?.id, startDate.toISOString(), endDate.toISOString()],
     queryFn: () =>
       getPunchHistory({
         data: {
           userId: user?.id ?? '',
+          boardId: currentBoard!.id,
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
         },
       }),
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!currentBoard?.id,
   })
 
   const { data: weeklySummary = [] } = useQuery({
-    queryKey: ['weeklySummary', user?.id, weekStart.toISOString()],
+    queryKey: ['weeklySummary', user?.id, currentBoard?.id, weekStart.toISOString()],
     queryFn: () =>
       getWeeklySummary({
         data: {
           userId: user?.id ?? '',
+          boardId: currentBoard!.id,
           weekStart: weekStart.toISOString(),
         },
       }),
-    enabled: !!user?.id && viewMode === 'week',
+    enabled: !!user?.id && !!currentBoard?.id && viewMode === 'week',
   })
 
   // Group punches by day
@@ -140,7 +144,7 @@ function HistoryPage() {
     setCurrentDate(new Date())
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || boardLoading) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -151,6 +155,33 @@ function HistoryPage() {
   if (!isSignedIn) {
     navigate({ to: '/login' })
     return null
+  }
+
+  if (!currentBoard) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] p-4 max-w-2xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">History</h1>
+            <p className="text-muted-foreground">View your punch history</p>
+          </div>
+        </div>
+        <Card className="bg-muted/50">
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-bold mb-2">No Board Selected</h3>
+            <p className="text-muted-foreground">
+              Please select an organization and board from the header to view history.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const periodLabel = viewMode === 'week'
@@ -168,7 +199,9 @@ function HistoryPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">History</h1>
-          <p className="text-muted-foreground">View your punch history</p>
+          <p className="text-muted-foreground">
+            {currentBoard.name} punch history
+          </p>
         </div>
       </div>
 
@@ -326,5 +359,3 @@ function HistoryPage() {
     </div>
   )
 }
-
-

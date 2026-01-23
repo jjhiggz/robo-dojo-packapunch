@@ -1,7 +1,6 @@
-import { useUser } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Calendar, ChevronLeft, ChevronRight, Clock, Shield, Users } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Calendar, ChevronLeft, ChevronRight, Clock, Shield, UserPlus, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -9,7 +8,7 @@ import {
   getAllUsersMonthlyStats,
   getAllUsersStatus,
 } from '@/server/punches'
-import { ADMIN_EMAILS } from '@/lib/constants'
+import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/admin/')({
   component: AdminDashboard,
@@ -44,24 +43,21 @@ const getAdjacentMonth = (monthStr: string, direction: 'prev' | 'next') => {
 }
 
 function AdminDashboard() {
-  const { user } = useUser()
   const navigate = useNavigate()
+  const { currentBoard, isOrgAdmin } = useBoardContext()
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
 
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false
-
   const { data: usersStatus = [] } = useQuery({
-    queryKey: ['allUsersStatus'],
-    queryFn: () => getAllUsersStatus(),
-    enabled: isAdmin,
+    queryKey: ['allUsersStatus', currentBoard?.id],
+    queryFn: () => getAllUsersStatus({ data: currentBoard!.id }),
+    enabled: isOrgAdmin && !!currentBoard?.id,
     refetchInterval: 30000,
   })
 
   const { data: monthlyStats = [], isLoading: statsLoading } = useQuery({
-    queryKey: ['allUsersMonthlyStats', selectedMonth],
-    queryFn: () => getAllUsersMonthlyStats({ data: { month: selectedMonth } }),
-    enabled: isAdmin,
+    queryKey: ['allUsersMonthlyStats', currentBoard?.id, selectedMonth],
+    queryFn: () => getAllUsersMonthlyStats({ data: { boardId: currentBoard!.id, month: selectedMonth } }),
+    enabled: isOrgAdmin && !!currentBoard?.id,
   })
 
   const clockedInUsers = usersStatus.filter((u) => u.isClockedIn)
@@ -74,12 +70,22 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto">
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight flex items-center gap-2">
-          <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
-          Admin Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground font-medium">Monitor attendance and hours</p>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight flex items-center gap-2">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            {currentBoard?.name} - Monitor attendance and hours
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to="/admin/members">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Members
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Overview - Horizontal scroll on mobile */}
@@ -105,7 +111,7 @@ function AdminDashboard() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold">{usersStatus.length}</div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-bold uppercase">Total Students</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-bold uppercase">Total Members</p>
               </div>
             </div>
           </CardContent>
@@ -146,7 +152,7 @@ function AdminDashboard() {
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center font-medium">Tap a student for details</p>
+          <p className="text-xs text-muted-foreground text-center font-medium">Tap a member for details</p>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           {statsLoading ? (

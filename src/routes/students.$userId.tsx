@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { calculateHoursFromPunches, getPunchHistory } from '@/server/punches'
+import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/students/$userId')({
   component: StudentProfilePage,
@@ -55,7 +56,7 @@ const getWeekDays = (weekStart: Date) => {
   return days
 }
 
-function WeeklyPunchCard({ userId, weekStart }: { userId: string; weekStart: Date }) {
+function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; boardId: number; weekStart: Date }) {
   const weekEnd = useMemo(() => {
     const end = new Date(weekStart)
     end.setDate(end.getDate() + 6)
@@ -64,11 +65,12 @@ function WeeklyPunchCard({ userId, weekStart }: { userId: string; weekStart: Dat
   }, [weekStart])
 
   const { data: punches = [], isLoading } = useQuery({
-    queryKey: ['punchHistory', userId, weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ['punchHistory', userId, boardId, weekStart.toISOString(), weekEnd.toISOString()],
     queryFn: () =>
       getPunchHistory({
         data: {
           userId,
+          boardId,
           startDate: weekStart.toISOString(),
           endDate: weekEnd.toISOString(),
         },
@@ -183,6 +185,7 @@ function StudentProfilePage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
+  const { currentBoard, isLoading: boardLoading } = useBoardContext()
   const [currentWeek, setCurrentWeek] = useState(new Date())
 
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
@@ -192,16 +195,18 @@ function StudentProfilePage() {
 
   // Get student info from a punch record
   const { data: recentPunches = [] } = useQuery({
-    queryKey: ['studentInfo', userId],
+    queryKey: ['studentInfo', userId, currentBoard?.id],
     queryFn: () =>
       getPunchHistory({
         data: {
           userId,
-          startDate: new Date(0).toISOString(), // All time
+          boardId: currentBoard!.id,
+          startDate: new Date(0).toISOString(),
           endDate: new Date().toISOString(),
         },
       }),
-    select: (data) => data.slice(0, 1), // Just get the most recent one for name/email
+    select: (data) => data.slice(0, 1),
+    enabled: !!currentBoard?.id,
   })
 
   const studentInfo = recentPunches?.[0] || { userName: null, userEmail: null }
@@ -216,7 +221,7 @@ function StudentProfilePage() {
     setCurrentWeek(new Date())
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || boardLoading) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -235,6 +240,32 @@ function StudentProfilePage() {
     return null
   }
 
+  if (!currentBoard) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">My Profile</h1>
+          </div>
+        </div>
+        <Card className="bg-muted/50">
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-bold mb-2">No Board Selected</h3>
+            <p className="text-muted-foreground">
+              Please select an organization and board from the header to view your profile.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 max-w-4xl mx-auto">
       {/* Header */}
@@ -249,7 +280,7 @@ function StudentProfilePage() {
             {studentInfo.userName || 'Unknown Student'}
           </h1>
           <p className="text-muted-foreground">
-            {studentInfo.userEmail || userId}
+            {currentBoard.name} - {studentInfo.userEmail || userId}
           </p>
         </div>
       </div>
@@ -274,7 +305,7 @@ function StudentProfilePage() {
       </Card>
 
       {/* Weekly Punch Card (Read-only) */}
-      <WeeklyPunchCard userId={userId} weekStart={weekStart} />
+      <WeeklyPunchCard userId={userId} boardId={currentBoard.id} weekStart={weekStart} />
 
       <div className="mt-4 text-center text-sm text-muted-foreground">
         <p>This is a read-only view for accountability.</p>
@@ -282,4 +313,3 @@ function StudentProfilePage() {
     </div>
   )
 }
-
