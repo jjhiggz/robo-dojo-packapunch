@@ -1,6 +1,6 @@
 import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/clerk-react'
 import { Link } from '@tanstack/react-router'
-import { LogOut, Settings, User } from 'lucide-react'
+import { Building2, ChevronDown, LogOut, Settings, Shield, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,10 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useBoardContext } from '@/lib/board-context'
 
 const UserMenu = () => {
   const { user } = useUser()
   const { signOut, openUserProfile } = useClerk()
+  const { organizations, currentOrg, setCurrentOrg } = useBoardContext()
 
   const getInitials = (name: string | null | undefined, email: string | undefined) => {
     if (name) {
@@ -53,6 +55,30 @@ const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+
+        {/* Organization Selector */}
+        {organizations.length > 0 && (
+          <>
+            <DropdownMenuLabel className="text-xs font-semibold uppercase text-muted-foreground">
+              Organization
+            </DropdownMenuLabel>
+            {organizations.map((org) => (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => setCurrentOrg(org)}
+                className={currentOrg?.id === org.id ? 'bg-accent/20' : ''}
+              >
+                <Building2 className="w-4 h-4 mr-2 shrink-0" />
+                <span className="truncate flex-1">{org.name}</span>
+                {org.role === 'admin' && (
+                  <Shield className="w-3 h-3 ml-2 text-accent shrink-0" />
+                )}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <DropdownMenuItem onClick={() => openUserProfile()}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
