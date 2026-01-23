@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getPunchHistory, updatePunch, deletePunch, createPunch } from '@/server/punches'
+import { getPunchHistory, updatePunch, deletePunch, addPunch } from '@/server/punches'
 import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/students/$userId')({
@@ -109,7 +109,7 @@ function StudentProfilePage() {
 
   const createMutation = useMutation({
     mutationFn: ({ timestamp, type }: { timestamp: string; type: 'in' | 'out' }) =>
-      createPunch({
+      addPunch({
         data: {
           userId,
           boardId: currentBoard!.id,
