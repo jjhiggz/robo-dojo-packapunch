@@ -15,22 +15,61 @@ import {
 export const ensureUser = createServerFn({ method: 'POST' })
   .inputValidator((data: { userId: string; email: string; name?: string }) => data)
   .handler(async ({ data }) => {
-    const existing = await db.query.users.findFirst({
+    // First check by userId (exact match)
+    const existingById = await db.query.users.findFirst({
       where: eq(users.userId, data.userId),
     })
 
-    if (existing) {
-      if (existing.email !== data.email || existing.name !== data.name) {
+    if (existingById) {
+      if (existingById.email !== data.email || existingById.name !== data.name) {
         const [updated] = await db
           .update(users)
-          .set({ email: data.email, name: data.name || existing.name })
+          .set({ email: data.email, name: data.name || existingById.name })
           .where(eq(users.userId, data.userId))
           .returning()
         return updated
       }
-      return existing
+      return existingById
     }
 
+    // Check by email (case-insensitive) - handles Clerk ID changes
+    const normalizedEmail = data.email.toLowerCase()
+    const allUsers = await db.query.users.findMany()
+    const existingByEmail = allUsers.find(u => u.email.toLowerCase() === normalizedEmail)
+
+    if (existingByEmail) {
+      // User exists with different Clerk ID - update the userId and merge
+      // Also update all related records (memberships, punches)
+      await db
+        .update(organizationMemberships)
+        .set({ userId: data.userId })
+        .where(eq(organizationMemberships.userId, existingByEmail.userId))
+
+      await db
+        .update(boardMemberships)
+        .set({ userId: data.userId })
+        .where(eq(boardMemberships.userId, existingByEmail.userId))
+
+      await db
+        .update(punches)
+        .set({ userId: data.userId })
+        .where(eq(punches.userId, existingByEmail.userId))
+
+      // Update the user record with new userId
+      const [updated] = await db
+        .update(users)
+        .set({ 
+          userId: data.userId, 
+          email: data.email,
+          name: data.name || existingByEmail.name 
+        })
+        .where(eq(users.userId, existingByEmail.userId))
+        .returning()
+
+      return updated
+    }
+
+    // No existing user found - create new
     const [newUser] = await db
       .insert(users)
       .values({
