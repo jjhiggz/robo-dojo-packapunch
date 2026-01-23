@@ -244,6 +244,63 @@ export const getBoardBySlug = createServerFn({ method: 'POST' })
     })
   })
 
+export const updateBoard = createServerFn({ method: 'POST' })
+  .inputValidator((data: { userId: string; boardId: number; name: string; slug: string }) => data)
+  .handler(async ({ data }) => {
+    const board = await db.query.boards.findFirst({
+      where: eq(boards.id, data.boardId),
+    })
+    if (!board) throw new Error('Board not found')
+
+    const membership = await db.query.organizationMemberships.findFirst({
+      where: and(
+        eq(organizationMemberships.userId, data.userId),
+        eq(organizationMemberships.organizationId, board.organizationId)
+      ),
+    })
+    if (membership?.role !== 'admin') {
+      throw new Error('Only organization admins can update boards')
+    }
+
+    const [updated] = await db
+      .update(boards)
+      .set({
+        name: data.name,
+        slug: data.slug,
+      })
+      .where(eq(boards.id, data.boardId))
+      .returning()
+
+    return updated
+  })
+
+export const deleteBoard = createServerFn({ method: 'POST' })
+  .inputValidator((data: { userId: string; boardId: number }) => data)
+  .handler(async ({ data }) => {
+    const board = await db.query.boards.findFirst({
+      where: eq(boards.id, data.boardId),
+    })
+    if (!board) throw new Error('Board not found')
+
+    const membership = await db.query.organizationMemberships.findFirst({
+      where: and(
+        eq(organizationMemberships.userId, data.userId),
+        eq(organizationMemberships.organizationId, board.organizationId)
+      ),
+    })
+    if (membership?.role !== 'admin') {
+      throw new Error('Only organization admins can delete boards')
+    }
+
+    // Delete related board memberships first
+    await db.delete(boardMemberships).where(eq(boardMemberships.boardId, data.boardId))
+
+    // Then delete the board
+    await db.delete(boards).where(eq(boards.id, data.boardId))
+
+    return { success: true }
+  })
+
 // MEMBERSHIP FUNCTIONS
 
 export const inviteToOrganization = createServerFn({ method: 'POST' })
@@ -783,5 +840,23 @@ export const getBoardMembers = createServerFn({ method: 'POST' })
       name: m.user.name,
       orgRole: m.role,
       hasBoardAccess: m.role === 'admin' || boardMemberIds.has(m.userId),
+    }))
+  })
+
+export const getOrganizationMembers = createServerFn({ method: 'POST' })
+  .inputValidator((organizationId: number) => organizationId)
+  .handler(async ({ data: organizationId }) => {
+    const orgMembers = await db.query.organizationMemberships.findMany({
+      where: eq(organizationMemberships.organizationId, organizationId),
+      with: {
+        user: true,
+      },
+    })
+
+    return orgMembers.map(m => ({
+      userId: m.userId,
+      email: m.user.email,
+      name: m.user.name,
+      role: m.role,
     }))
   })

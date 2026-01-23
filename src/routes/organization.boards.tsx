@@ -4,7 +4,7 @@ import { useUser } from '@clerk/clerk-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LayoutGrid, Plus } from 'lucide-react'
 import { useBoardContext } from '@/lib/board-context'
-import { getUserBoardsInOrg, createBoard } from '@/server/punches'
+import { getUserBoardsInOrg, createBoard, updateBoard, deleteBoard } from '@/server/punches'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,13 +22,25 @@ export const Route = createFileRoute('/organization/boards')({
   component: OrganizationBoardsPage,
 })
 
+interface Board {
+  id: number
+  name: string
+  slug: string
+  organizationId: number
+  createdAt: Date
+}
+
 function OrganizationBoardsPage() {
   const { user } = useUser()
   const { currentOrg } = useBoardContext()
   const queryClient = useQueryClient()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedBoard, setSelectedBoard] = useState<Board | null>(null)
   const [newBoardName, setNewBoardName] = useState('')
+  const [editBoardName, setEditBoardName] = useState('')
   const [createError, setCreateError] = useState('')
+  const [editError, setEditError] = useState('')
 
   const { data: boards = [], isLoading } = useQuery({
     queryKey: ['userBoards', user?.id, currentOrg?.id],
@@ -61,6 +73,56 @@ function OrganizationBoardsPage() {
       setCreateError(error.message)
     },
   })
+
+  const editMutation = useMutation({
+    mutationFn: (data: { boardId: number; name: string }) => {
+      const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      return updateBoard({
+        data: {
+          userId: user!.id,
+          boardId: data.boardId,
+          name: data.name,
+          slug,
+        },
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userBoards'] })
+      setEditDialogOpen(false)
+      setSelectedBoard(null)
+      setEditBoardName('')
+      setEditError('')
+    },
+    onError: (error: Error) => {
+      setEditError(error.message)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (boardId: number) =>
+      deleteBoard({
+        data: {
+          userId: user!.id,
+          boardId,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userBoards'] })
+    },
+  })
+
+  const handleEdit = (board: Board) => {
+    setSelectedBoard(board)
+    setEditBoardName(board.name)
+    setEditError('')
+    setEditDialogOpen(true)
+  }
+
+  const handleDelete = (board: Board) => {
+    if (confirm(`Are you sure you want to delete "${board.name}"? This action cannot be undone.`)) {
+      deleteMutation.mutate(board.id)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -121,11 +183,22 @@ function OrganizationBoardsPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" disabled>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(board)}
+                  >
                     Edit
                   </Button>
-                  <Button variant="destructive" size="sm" className="flex-1" disabled>
-                    Delete
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleDelete(board)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? '...' : 'Delete'}
                   </Button>
                 </div>
               </CardContent>
@@ -184,6 +257,62 @@ function OrganizationBoardsPage() {
               disabled={createMutation.isPending}
             >
               {createMutation.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Board Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-extrabold uppercase">Edit Board</DialogTitle>
+            <DialogDescription className="font-medium">
+              Update the board name and slug.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-board-name" className="font-bold">Board Name</Label>
+              <Input
+                id="edit-board-name"
+                placeholder="Development Team"
+                value={editBoardName}
+                onChange={(e) => {
+                  setEditBoardName(e.target.value)
+                  setEditError('')
+                }}
+                className="border-2"
+              />
+              {editBoardName && (
+                <p className="text-xs text-muted-foreground font-medium">
+                  Slug: {editBoardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
+                </p>
+              )}
+            </div>
+
+            {editError && (
+              <p className="text-sm text-destructive font-bold">{editError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!editBoardName.trim()) {
+                  setEditError('Board name is required')
+                  return
+                }
+                if (!selectedBoard) return
+                editMutation.mutate({ boardId: selectedBoard.id, name: editBoardName })
+              }}
+              disabled={editMutation.isPending}
+            >
+              {editMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
