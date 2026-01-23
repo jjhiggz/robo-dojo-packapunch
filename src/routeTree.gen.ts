@@ -10,20 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BoardRouteImport } from './routes/board'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as StudentsUserIdRouteImport } from './routes/students.$userId'
 import { Route as SignupSplatRouteImport } from './routes/signup.$'
+import { Route as OrganizationSettingsRouteImport } from './routes/organization.settings'
+import { Route as OrganizationMembersRouteImport } from './routes/organization.members'
+import { Route as OrganizationBoardsRouteImport } from './routes/organization.boards'
 import { Route as LoginSplatRouteImport } from './routes/login.$'
-import { Route as AdminMembersRouteImport } from './routes/admin.members'
-import { Route as AdminStudentsUserIdRouteImport } from './routes/admin.students.$userId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationRoute = OrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -31,25 +36,15 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const BoardRoute = BoardRouteImport.update({
+  id: '/board',
+  path: '/board',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
 } as any)
 const StudentsUserIdRoute = StudentsUserIdRouteImport.update({
   id: '/students/$userId',
@@ -61,107 +56,114 @@ const SignupSplatRoute = SignupSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => SignupRoute,
 } as any)
+const OrganizationSettingsRoute = OrganizationSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OrganizationRoute,
+} as any)
+const OrganizationMembersRoute = OrganizationMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => OrganizationRoute,
+} as any)
+const OrganizationBoardsRoute = OrganizationBoardsRouteImport.update({
+  id: '/boards',
+  path: '/boards',
+  getParentRoute: () => OrganizationRoute,
+} as any)
 const LoginSplatRoute = LoginSplatRouteImport.update({
   id: '/$',
   path: '/$',
   getParentRoute: () => LoginRoute,
 } as any)
-const AdminMembersRoute = AdminMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStudentsUserIdRoute = AdminStudentsUserIdRouteImport.update({
-  id: '/students/$userId',
-  path: '/students/$userId',
-  getParentRoute: () => AdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/history': typeof HistoryRoute
+  '/board': typeof BoardRoute
   '/login': typeof LoginRouteWithChildren
+  '/organization': typeof OrganizationRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
-  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
+  '/organization/boards': typeof OrganizationBoardsRoute
+  '/organization/members': typeof OrganizationMembersRoute
+  '/organization/settings': typeof OrganizationSettingsRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/students/$userId': typeof AdminStudentsUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/history': typeof HistoryRoute
+  '/board': typeof BoardRoute
   '/login': typeof LoginRouteWithChildren
+  '/organization': typeof OrganizationRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
-  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
+  '/organization/boards': typeof OrganizationBoardsRoute
+  '/organization/members': typeof OrganizationMembersRoute
+  '/organization/settings': typeof OrganizationSettingsRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
-  '/admin': typeof AdminIndexRoute
-  '/admin/students/$userId': typeof AdminStudentsUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/history': typeof HistoryRoute
+  '/board': typeof BoardRoute
   '/login': typeof LoginRouteWithChildren
+  '/organization': typeof OrganizationRouteWithChildren
   '/signup': typeof SignupRouteWithChildren
-  '/admin/members': typeof AdminMembersRoute
   '/login/$': typeof LoginSplatRoute
+  '/organization/boards': typeof OrganizationBoardsRoute
+  '/organization/members': typeof OrganizationMembersRoute
+  '/organization/settings': typeof OrganizationSettingsRoute
   '/signup/$': typeof SignupSplatRoute
   '/students/$userId': typeof StudentsUserIdRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/students/$userId': typeof AdminStudentsUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
-    | '/history'
+    | '/board'
     | '/login'
+    | '/organization'
     | '/signup'
-    | '/admin/members'
     | '/login/$'
+    | '/organization/boards'
+    | '/organization/members'
+    | '/organization/settings'
     | '/signup/$'
     | '/students/$userId'
-    | '/admin/'
-    | '/admin/students/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/history'
+    | '/board'
     | '/login'
+    | '/organization'
     | '/signup'
-    | '/admin/members'
     | '/login/$'
+    | '/organization/boards'
+    | '/organization/members'
+    | '/organization/settings'
     | '/signup/$'
     | '/students/$userId'
-    | '/admin'
-    | '/admin/students/$userId'
   id:
     | '__root__'
     | '/'
-    | '/admin'
-    | '/history'
+    | '/board'
     | '/login'
+    | '/organization'
     | '/signup'
-    | '/admin/members'
     | '/login/$'
+    | '/organization/boards'
+    | '/organization/members'
+    | '/organization/settings'
     | '/signup/$'
     | '/students/$userId'
-    | '/admin/'
-    | '/admin/students/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRouteWithChildren
-  HistoryRoute: typeof HistoryRoute
+  BoardRoute: typeof BoardRoute
   LoginRoute: typeof LoginRouteWithChildren
+  OrganizationRoute: typeof OrganizationRouteWithChildren
   SignupRoute: typeof SignupRouteWithChildren
   StudentsUserIdRoute: typeof StudentsUserIdRoute
 }
@@ -175,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organization': {
+      id: '/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof OrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -182,18 +191,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/board': {
+      id: '/board'
+      path: '/board'
+      fullPath: '/board'
+      preLoaderRoute: typeof BoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -202,13 +204,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/students/$userId': {
       id: '/students/$userId'
@@ -224,6 +219,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupSplatRouteImport
       parentRoute: typeof SignupRoute
     }
+    '/organization/settings': {
+      id: '/organization/settings'
+      path: '/settings'
+      fullPath: '/organization/settings'
+      preLoaderRoute: typeof OrganizationSettingsRouteImport
+      parentRoute: typeof OrganizationRoute
+    }
+    '/organization/members': {
+      id: '/organization/members'
+      path: '/members'
+      fullPath: '/organization/members'
+      preLoaderRoute: typeof OrganizationMembersRouteImport
+      parentRoute: typeof OrganizationRoute
+    }
+    '/organization/boards': {
+      id: '/organization/boards'
+      path: '/boards'
+      fullPath: '/organization/boards'
+      preLoaderRoute: typeof OrganizationBoardsRouteImport
+      parentRoute: typeof OrganizationRoute
+    }
     '/login/$': {
       id: '/login/$'
       path: '/$'
@@ -231,36 +247,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginSplatRouteImport
       parentRoute: typeof LoginRoute
     }
-    '/admin/members': {
-      id: '/admin/members'
-      path: '/members'
-      fullPath: '/admin/members'
-      preLoaderRoute: typeof AdminMembersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/students/$userId': {
-      id: '/admin/students/$userId'
-      path: '/students/$userId'
-      fullPath: '/admin/students/$userId'
-      preLoaderRoute: typeof AdminStudentsUserIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
-
-interface AdminRouteChildren {
-  AdminMembersRoute: typeof AdminMembersRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminStudentsUserIdRoute: typeof AdminStudentsUserIdRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminMembersRoute: AdminMembersRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  AdminStudentsUserIdRoute: AdminStudentsUserIdRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface LoginRouteChildren {
   LoginSplatRoute: typeof LoginSplatRoute
@@ -271,6 +259,22 @@ const LoginRouteChildren: LoginRouteChildren = {
 }
 
 const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
+
+interface OrganizationRouteChildren {
+  OrganizationBoardsRoute: typeof OrganizationBoardsRoute
+  OrganizationMembersRoute: typeof OrganizationMembersRoute
+  OrganizationSettingsRoute: typeof OrganizationSettingsRoute
+}
+
+const OrganizationRouteChildren: OrganizationRouteChildren = {
+  OrganizationBoardsRoute: OrganizationBoardsRoute,
+  OrganizationMembersRoute: OrganizationMembersRoute,
+  OrganizationSettingsRoute: OrganizationSettingsRoute,
+}
+
+const OrganizationRouteWithChildren = OrganizationRoute._addFileChildren(
+  OrganizationRouteChildren,
+)
 
 interface SignupRouteChildren {
   SignupSplatRoute: typeof SignupSplatRoute
@@ -285,9 +289,9 @@ const SignupRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRouteWithChildren,
-  HistoryRoute: HistoryRoute,
+  BoardRoute: BoardRoute,
   LoginRoute: LoginRouteWithChildren,
+  OrganizationRoute: OrganizationRouteWithChildren,
   SignupRoute: SignupRouteWithChildren,
   StudentsUserIdRoute: StudentsUserIdRoute,
 }
