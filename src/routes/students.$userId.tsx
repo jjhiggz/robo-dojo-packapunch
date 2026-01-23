@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, AlertCircle, Edit, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +13,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { calculateHoursFromPunches, getPunchHistory } from '@/server/punches'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { calculateHoursFromPunches, getPunchHistory, updatePunch, deletePunch } from '@/server/punches'
 import { useBoardContext } from '@/lib/board-context'
 
 export const Route = createFileRoute('/students/$userId')({
@@ -56,7 +66,18 @@ const getWeekDays = (weekStart: Date) => {
   return days
 }
 
-function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; boardId: number; weekStart: Date }) {
+interface EditPunchData {
+  id: number
+  timestamp: string
+  type: 'in' | 'out'
+}
+
+function WeeklyPunchCard({ userId, boardId, weekStart, isOrgAdmin }: { userId: string; boardId: number; weekStart: Date; isOrgAdmin: boolean }) {
+  const queryClient = useQueryClient()
+  const [editingPunch, setEditingPunch] = useState<EditPunchData | null>(null)
+  const [editTime, setEditTime] = useState('')
+  const [editDate, setEditDate] = useState('')
+
   const weekEnd = useMemo(() => {
     const end = new Date(weekStart)
     end.setDate(end.getDate() + 6)
@@ -98,6 +119,46 @@ function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; board
 
   const totalWeekHours = useMemo(() => calculateHoursFromPunches(punches), [punches])
 
+  const updateMutation = useMutation({
+    mutationFn: ({ punchId, timestamp }: { punchId: number; timestamp: string }) =>
+      updatePunch({ data: { punchId, timestamp } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
+      setEditingPunch(null)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (punchId: number) => deletePunch({ data: punchId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, boardId] })
+    },
+  })
+
+  const handleEdit = (punch: any) => {
+    const date = new Date(punch.timestamp)
+    setEditDate(date.toISOString().split('T')[0])
+    setEditTime(date.toTimeString().slice(0, 5))
+    setEditingPunch({
+      id: punch.id,
+      timestamp: punch.timestamp,
+      type: punch.type,
+    })
+  }
+
+  const handleSaveEdit = () => {
+    if (!editingPunch || !editDate || !editTime) return
+
+    const timestamp = new Date(`${editDate}T${editTime}:00`).toISOString()
+    updateMutation.mutate({ punchId: editingPunch.id, timestamp })
+  }
+
+  const handleDelete = (punchId: number) => {
+    if (confirm('Are you sure you want to delete this punch?')) {
+      deleteMutation.mutate(punchId)
+    }
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -134,6 +195,7 @@ function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; board
               <TableHead>In</TableHead>
               <TableHead>Out</TableHead>
               <TableHead className="text-right">Hours</TableHead>
+              {isOrgAdmin && <TableHead className="w-[80px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -157,7 +219,29 @@ function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; board
                     return (
                       <TableCell key={idx}>
                         {punch ? (
-                          <span className="text-sm">{formatTime(punch.timestamp)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{formatTime(punch.timestamp)}</span>
+                            {isOrgAdmin && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleEdit(punch)}
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(punch.id)}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -167,16 +251,63 @@ function WeeklyPunchCard({ userId, boardId, weekStart }: { userId: string; board
                   <TableCell className="text-right font-medium">
                     {dayHours > 0 ? formatHours(dayHours) : '—'}
                   </TableCell>
+                  {isOrgAdmin && <TableCell></TableCell>}
                 </TableRow>
               )
             })}
             <TableRow className="font-bold bg-muted/50">
               <TableCell colSpan={5}>Total</TableCell>
               <TableCell className="text-right">{formatHours(totalWeekHours)}</TableCell>
+              {isOrgAdmin && <TableCell></TableCell>}
             </TableRow>
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Edit Punch Dialog */}
+      <Dialog open={!!editingPunch} onOpenChange={() => setEditingPunch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-extrabold uppercase">Edit Punch</DialogTitle>
+            <DialogDescription className="font-medium">
+              Update the time for this punch {editingPunch?.type === 'in' ? 'in' : 'out'} record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-date" className="font-bold">Date</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="border-2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-time" className="font-bold">Time</Label>
+              <Input
+                id="edit-time"
+                type="time"
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+                className="border-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPunch(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateMutation.isPending || !editDate || !editTime}
+            >
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
@@ -185,13 +316,14 @@ function StudentProfilePage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const navigate = useNavigate()
   const { userId } = Route.useParams()
-  const { currentBoard, isLoading: boardLoading } = useBoardContext()
+  const { currentBoard, isOrgAdmin, isLoading: boardLoading } = useBoardContext()
   const [currentWeek, setCurrentWeek] = useState(new Date())
 
   const weekStart = useMemo(() => getWeekStart(currentWeek), [currentWeek])
 
-  // Users can only view their own profile
+  // Users can view their own profile, or org admins can view anyone's
   const isOwnProfile = user?.id === userId
+  const canView = isOwnProfile || isOrgAdmin
 
   // Get student info from a punch record
   const { data: recentPunches = [] } = useQuery({
@@ -234,8 +366,8 @@ function StudentProfilePage() {
     return null
   }
 
-  // Redirect if trying to view someone else's profile
-  if (!isOwnProfile) {
+  // Redirect if trying to view someone else's profile and not an admin
+  if (!canView) {
     navigate({ to: '/' })
     return null
   }
@@ -277,7 +409,7 @@ function StudentProfilePage() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {studentInfo.userName || 'Unknown Student'}
+            {isOwnProfile ? 'My Profile' : studentInfo.userName || 'Unknown Student'}
           </h1>
           <p className="text-muted-foreground">
             {currentBoard.name} - {studentInfo.userEmail || userId}
@@ -304,12 +436,14 @@ function StudentProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Weekly Punch Card (Read-only) */}
-      <WeeklyPunchCard userId={userId} boardId={currentBoard.id} weekStart={weekStart} />
+      {/* Weekly Punch Card */}
+      <WeeklyPunchCard userId={userId} boardId={currentBoard.id} weekStart={weekStart} isOrgAdmin={isOrgAdmin} />
 
-      <div className="mt-4 text-center text-sm text-muted-foreground">
-        <p>This is a read-only view for accountability.</p>
-      </div>
+      {!isOrgAdmin && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          <p>This is a read-only view for accountability.</p>
+        </div>
+      )}
     </div>
   )
 }
