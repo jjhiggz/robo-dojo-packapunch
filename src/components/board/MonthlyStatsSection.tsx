@@ -62,6 +62,24 @@ export function MonthlyStatsSection({ editable, currentUserId }: MonthlyStatsSec
     setSelectedMonth(getAdjacentMonth(selectedMonth, direction))
   }
 
+  // Sort by clocked-in status first, then alphabetically by name
+  const sortedStats = [...monthlyStats].sort((a, b) => {
+    const aStatus = usersStatus.find((u) => u.userId === a.userId)
+    const bStatus = usersStatus.find((u) => u.userId === b.userId)
+    const aIsClockedIn = aStatus?.isClockedIn ?? false
+    const bIsClockedIn = bStatus?.isClockedIn ?? false
+
+    // First, sort by clocked-in status (clocked in users first)
+    if (aIsClockedIn !== bIsClockedIn) {
+      return bIsClockedIn ? 1 : -1
+    }
+
+    // Then, sort alphabetically by name
+    const aName = (a.userName || '').toLowerCase()
+    const bName = (b.userName || '').toLowerCase()
+    return aName.localeCompare(bName)
+  })
+
   return (
     <Card>
       <CardHeader className="pb-3 space-y-3">
@@ -96,7 +114,7 @@ export function MonthlyStatsSection({ editable, currentUserId }: MonthlyStatsSec
           </div>
         ) : (
           <div className="space-y-2">
-            {monthlyStats.slice(0, 50).map((stat) => {
+            {sortedStats.slice(0, 50).map((stat) => {
               const currentStatus = usersStatus.find((u) => u.userId === stat.userId)
               const isClockedIn = currentStatus?.isClockedIn ?? false
               const isCurrentUser = stat.userId === currentUserId
