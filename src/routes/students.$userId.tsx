@@ -59,6 +59,39 @@ const getCurrentLocalTime = () => {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 }
 
+const formatDuration = (hours: number): string => {
+  const totalMinutes = Math.round(hours * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
+// Creates a map of out punch ID -> hours accumulated from the previous in punch
+const calculateOutPunchDurations = (punchList: Array<{ id: number; type: string; timestamp: Date | string }>) => {
+  // Sort by timestamp ascending (oldest first) to find in/out pairs
+  const sorted = [...punchList].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+  
+  const durationMap = new Map<number, number>()
+  let lastInTime: Date | null = null
+  
+  for (const punch of sorted) {
+    if (punch.type === 'in') {
+      lastInTime = new Date(punch.timestamp)
+    } else if (punch.type === 'out' && lastInTime) {
+      const outTime = new Date(punch.timestamp)
+      const durationHours = (outTime.getTime() - lastInTime.getTime()) / (1000 * 60 * 60)
+      durationMap.set(punch.id, durationHours)
+      lastInTime = null // Reset after pairing
+    }
+  }
+  
+  return durationMap
+}
+
 interface PunchFormData {
   date: string
   time: string
@@ -221,6 +254,12 @@ function StudentProfilePage() {
   const sortedPunches = [...punches].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   )
+  
+  // Calculate durations for out punches
+  const outPunchDurations = calculateOutPunchDurations(punches)
+  
+  // Calculate total hours from all out punches
+  const totalHours = Array.from(outPunchDurations.values()).reduce((sum, hours) => sum + hours, 0)
 
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 sm:p-6 max-w-6xl mx-auto">
@@ -279,15 +318,22 @@ function StudentProfilePage() {
                         {formatDateTime(punch.timestamp)}
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={`inline-flex items-center px-3 py-1 border-2 border-foreground font-extrabold uppercase text-xs shadow-[2px_2px_0px_hsl(0_0%_5%)] ${
-                            punch.type === 'in'
-                              ? 'bg-[hsl(140_70%_85%)] text-[hsl(140_80%_20%)]'
-                              : 'bg-[hsl(0_70%_85%)] text-[hsl(0_80%_30%)]'
-                          }`}
-                        >
-                          {punch.type === 'in' ? 'IN' : 'OUT'}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 border-2 border-foreground font-extrabold uppercase text-xs shadow-[2px_2px_0px_hsl(0_0%_5%)] ${
+                              punch.type === 'in'
+                                ? 'bg-[hsl(140_70%_85%)] text-[hsl(140_80%_20%)]'
+                                : 'bg-[hsl(0_70%_85%)] text-[hsl(0_80%_30%)]'
+                            }`}
+                          >
+                            {punch.type === 'in' ? 'IN' : 'OUT'}
+                          </span>
+                          {punch.type === 'out' && outPunchDurations.has(punch.id) && (
+                            <span className="text-sm text-muted-foreground font-medium">
+                              {formatDuration(outPunchDurations.get(punch.id) ?? 0)}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       {isOrgAdmin && (
                         <TableCell className="text-right">
@@ -316,6 +362,14 @@ function StudentProfilePage() {
                   ))}
                 </TableBody>
               </Table>
+              
+              {/* Total Hours */}
+              <div className="mt-6 pt-4 border-t-2 border-foreground">
+                <div className="flex items-center justify-between p-4 bg-[hsl(210_70%_90%)] border-2 border-foreground shadow-[2px_2px_0px_hsl(0_0%_5%)]">
+                  <span className="font-extrabold uppercase">Total Hours</span>
+                  <span className="text-2xl font-extrabold">{formatDuration(totalHours)}</span>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

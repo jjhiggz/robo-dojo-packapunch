@@ -99,7 +99,7 @@ export function PunchControls() {
               <button
                 type="button"
                 className="flex-1 min-w-0 text-left group"
-                onClick={() => navigate({ to: `/students/${user.id}` })}
+                onClick={() => navigate({ to: '/students/$userId', params: { userId: user.id } })}
               >
                 <div className="font-extrabold text-lg truncate group-hover:text-primary group-hover:underline underline-offset-2 decoration-2">
                   {user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || 'You'}
@@ -184,7 +184,7 @@ export function PunchControls() {
                     key={u.userId}
                     type="button"
                     className="group w-full flex items-center gap-3 p-4 bg-[hsl(140_70%_90%)] border-2 border-foreground cursor-pointer hover:bg-[hsl(140_70%_85%)] transition-colors shadow-[2px_2px_0px_hsl(0_0%_5%)] hover:shadow-[3px_3px_0px_hsl(0_0%_5%)] hover:-translate-x-px hover:-translate-y-px"
-                    onClick={() => navigate({ to: `/admin/students/${u.userId}` })}
+                    onClick={() => navigate({ to: '/students/$userId', params: { userId: u.userId } })}
                   >
                     {content}
                   </button>
