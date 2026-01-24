@@ -49,6 +49,16 @@ const formatDateTime = (date: Date | string) => {
   })
 }
 
+const getTodayLocalDate = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+const getCurrentLocalTime = () => {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
 interface PunchFormData {
   date: string
   time: string
@@ -65,8 +75,8 @@ function StudentProfilePage() {
   const [editingPunch, setEditingPunch] = useState<{ id: number; data: PunchFormData } | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addFormData, setAddFormData] = useState<PunchFormData>({
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5),
+    date: getTodayLocalDate(),
+    time: getCurrentLocalTime(),
     type: 'in',
   })
 
@@ -121,8 +131,8 @@ function StudentProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, currentBoard?.id] })
       setAddDialogOpen(false)
       setAddFormData({
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
+        date: getTodayLocalDate(),
+        time: getCurrentLocalTime(),
         type: 'in',
       })
     },
@@ -401,6 +411,7 @@ function StudentProfilePage() {
                 id="add-date"
                 type="date"
                 value={addFormData.date}
+                max={getTodayLocalDate()}
                 onChange={(e) => setAddFormData({ ...addFormData, date: e.target.value })}
                 className="border-2"
               />
