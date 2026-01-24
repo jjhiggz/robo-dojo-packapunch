@@ -82,7 +82,7 @@ function StudentProfilePage() {
           userId,
           boardId: currentBoard!.id,
           startDate: new Date(0).toISOString(),
-          endDate: new Date().toISOString(),
+          endDate: new Date('2099-12-31').toISOString(), // Far future date to include all punches
         },
       }),
     enabled: !!currentBoard?.id && canView,
@@ -175,7 +175,8 @@ function StudentProfilePage() {
     return null
   }
 
-  if (!canView) {
+  // Don't check permissions until currentBoard is loaded (which indicates org/board context is ready)
+  if (!canView && currentBoard) {
     navigate({ to: '/' })
     return null
   }

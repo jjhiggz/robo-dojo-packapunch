@@ -472,9 +472,9 @@ export const getTodayPunches = createServerFn({ method: 'POST' })
   .inputValidator((data: { userId: string; boardId: number }) => data)
   .handler(async ({ data }) => {
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    today.setUTCHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
 
     return await db
       .select()
@@ -494,9 +494,9 @@ export const getPunchHistory = createServerFn({ method: 'POST' })
   .inputValidator((data: { userId: string; boardId: number; startDate: string; endDate: string }) => data)
   .handler(async ({ data }) => {
     const start = new Date(data.startDate)
-    start.setHours(0, 0, 0, 0)
+    start.setUTCHours(0, 0, 0, 0)
     const end = new Date(data.endDate)
-    end.setHours(23, 59, 59, 999)
+    end.setUTCHours(23, 59, 59, 999)
 
     return await db
       .select()
@@ -540,9 +540,9 @@ export const getAllTodayPunches = createServerFn({ method: 'POST' })
   .inputValidator((boardId: number) => boardId)
   .handler(async ({ data: boardId }) => {
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    today.setUTCHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
 
     return await db
       .select()
@@ -586,9 +586,9 @@ export const getUserPunchHistory = createServerFn({ method: 'POST' })
   .inputValidator((data: { userId: string; boardId: number; startDate: string; endDate: string }) => data)
   .handler(async ({ data }) => {
     const start = new Date(data.startDate)
-    start.setHours(0, 0, 0, 0)
+    start.setUTCHours(0, 0, 0, 0)
     const end = new Date(data.endDate)
-    end.setHours(23, 59, 59, 999)
+    end.setUTCHours(23, 59, 59, 999)
 
     return await db
       .select()
@@ -608,9 +608,9 @@ export const getWeeklySummary = createServerFn({ method: 'POST' })
   .inputValidator((data: { userId: string; boardId: number; weekStart: string }) => data)
   .handler(async ({ data }) => {
     const start = new Date(data.weekStart)
-    start.setHours(0, 0, 0, 0)
+    start.setUTCHours(0, 0, 0, 0)
     const end = new Date(start)
-    end.setDate(end.getDate() + 7)
+    end.setUTCDate(end.getUTCDate() + 7)
 
     const weekPunches = await db
       .select()

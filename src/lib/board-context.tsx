@@ -69,7 +69,7 @@ export const BoardProvider = ({ children }: { children: ReactNode }) => {
   })
 
   // Get user's role in current org
-  const { data: orgRole } = useQuery({
+  const { data: orgRole, isLoading: orgRoleLoading } = useQuery({
     queryKey: ['userOrgRole', user?.id, currentOrg?.id],
     queryFn: () => getUserOrgRole({ data: { userId: user!.id, organizationId: currentOrg!.id } }),
     enabled: isSignedIn && !!user?.id && !!currentOrg?.id,
@@ -129,7 +129,7 @@ export const BoardProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const isLoading = !isLoaded || orgsLoading || (!!currentOrg && boardsLoading)
+  const isLoading = !isLoaded || orgsLoading || (!!currentOrg && boardsLoading) || (!!currentOrg && orgRoleLoading)
 
   return (
     <BoardContext.Provider
