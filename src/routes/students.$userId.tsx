@@ -186,10 +186,15 @@ function StudentProfilePage() {
   const handleSaveEdit = () => {
     if (!editingPunch) return
 
-    const timestamp = new Date(`${editingPunch.data.date}T${editingPunch.data.time}:00`).toISOString()
+    const punchTime = new Date(`${editingPunch.data.date}T${editingPunch.data.time}:00`)
+    if (punchTime > new Date()) {
+      alert('Cannot set punch time in the future')
+      return
+    }
+    
     updateMutation.mutate({
       punchId: editingPunch.id,
-      timestamp,
+      timestamp: punchTime.toISOString(),
       type: editingPunch.data.type,
     })
   }
@@ -201,8 +206,12 @@ function StudentProfilePage() {
   }
 
   const handleAdd = () => {
-    const timestamp = new Date(`${addFormData.date}T${addFormData.time}:00`).toISOString()
-    createMutation.mutate({ timestamp, type: addFormData.type })
+    const punchTime = new Date(`${addFormData.date}T${addFormData.time}:00`)
+    if (punchTime > new Date()) {
+      alert('Cannot create punches in the future')
+      return
+    }
+    createMutation.mutate({ timestamp: punchTime.toISOString(), type: addFormData.type })
   }
 
   if (!isLoaded || boardLoading) {

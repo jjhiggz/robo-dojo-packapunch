@@ -762,10 +762,17 @@ export const getUserMonthlyBreakdown = createServerFn({ method: 'POST' })
 export const updatePunch = createServerFn({ method: 'POST' })
   .inputValidator((data: { punchId: number; timestamp: string; type?: 'in' | 'out' }) => data)
   .handler(async ({ data }) => {
+    const punchTime = new Date(data.timestamp)
+    
+    // Prevent future punches
+    if (punchTime > new Date()) {
+      throw new Error('Cannot set punch time in the future')
+    }
+    
     const [updated] = await db
       .update(punches)
       .set({
-        timestamp: new Date(data.timestamp),
+        timestamp: punchTime,
         ...(data.type && { type: data.type }),
       })
       .where(eq(punches.id, data.punchId))
@@ -799,6 +806,13 @@ export const addPunch = createServerFn({ method: 'POST' })
     timestamp: string
   }) => data)
   .handler(async ({ data }) => {
+    const punchTime = new Date(data.timestamp)
+    
+    // Prevent future punches
+    if (punchTime > new Date()) {
+      throw new Error('Cannot create punches in the future')
+    }
+    
     const [newPunch] = await db
       .insert(punches)
       .values({
@@ -807,7 +821,7 @@ export const addPunch = createServerFn({ method: 'POST' })
         userName: data.userName || null,
         userEmail: data.userEmail || null,
         type: data.type,
-        timestamp: new Date(data.timestamp),
+        timestamp: punchTime,
       })
       .returning()
 
