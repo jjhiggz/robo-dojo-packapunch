@@ -1,18 +1,10 @@
 import { useUser } from '@clerk/clerk-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, AlertCircle, Edit, Trash2, Plus } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Edit, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -28,10 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { getPunchHistory, updatePunch, deletePunch, addPunch } from '@/server/punches'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { useBoardContext } from '@/lib/board-context'
+import { addPunch, deletePunch, getPunchHistory, updatePunch } from '@/server/punches'
 
 export const Route = createFileRoute('/students/$userId')({
   component: StudentProfilePage,
@@ -96,6 +97,7 @@ interface PunchFormData {
   date: string
   time: string
   type: 'in' | 'out'
+  notes: string
 }
 
 function StudentProfilePage() {
@@ -111,6 +113,7 @@ function StudentProfilePage() {
     date: getTodayLocalDate(),
     time: getCurrentLocalTime(),
     type: 'in',
+    notes: '',
   })
 
   // Users can view their own profile, or org admins can view anyone's
@@ -135,8 +138,8 @@ function StudentProfilePage() {
   const studentInfo = punches[0] || { userName: null, userEmail: null }
 
   const updateMutation = useMutation({
-    mutationFn: ({ punchId, timestamp, type }: { punchId: number; timestamp: string; type?: 'in' | 'out' }) =>
-      updatePunch({ data: { punchId, timestamp, type } }),
+    mutationFn: ({ punchId, timestamp, type, notes }: { punchId: number; timestamp: string; type?: 'in' | 'out'; notes?: string | null }) =>
+      updatePunch({ data: { punchId, timestamp, type, notes } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['punchHistory', userId, currentBoard?.id] })
       setEditingPunch(null)
@@ -151,13 +154,14 @@ function StudentProfilePage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: ({ timestamp, type }: { timestamp: string; type: 'in' | 'out' }) =>
+    mutationFn: ({ timestamp, type, notes }: { timestamp: string; type: 'in' | 'out'; notes?: string }) =>
       addPunch({
         data: {
           userId,
           boardId: currentBoard!.id,
           timestamp,
           type,
+          notes,
         },
       }),
     onSuccess: () => {
@@ -167,6 +171,7 @@ function StudentProfilePage() {
         date: getTodayLocalDate(),
         time: getCurrentLocalTime(),
         type: 'in',
+        notes: '',
       })
     },
   })
@@ -179,6 +184,7 @@ function StudentProfilePage() {
         date: date.toISOString().split('T')[0],
         time: date.toTimeString().slice(0, 5),
         type: punch.type,
+        notes: punch.notes || '',
       },
     })
   }
@@ -196,6 +202,7 @@ function StudentProfilePage() {
       punchId: editingPunch.id,
       timestamp: punchTime.toISOString(),
       type: editingPunch.data.type,
+      notes: editingPunch.data.notes || null,
     })
   }
 
@@ -211,7 +218,11 @@ function StudentProfilePage() {
       alert('Cannot create punches in the future')
       return
     }
-    createMutation.mutate({ timestamp: punchTime.toISOString(), type: addFormData.type })
+    createMutation.mutate({ 
+      timestamp: punchTime.toISOString(), 
+      type: addFormData.type,
+      notes: addFormData.notes || undefined,
+    })
   }
 
   if (!isLoaded || boardLoading) {
@@ -317,6 +328,7 @@ function StudentProfilePage() {
                   <TableRow>
                     <TableHead>Date & Time</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Notes</TableHead>
                     {isOrgAdmin && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -343,6 +355,15 @@ function StudentProfilePage() {
                             </span>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {punch.notes ? (
+                          <span className="text-sm text-muted-foreground truncate block" title={punch.notes}>
+                            {punch.notes}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground/50">-</span>
+                        )}
                       </TableCell>
                       {isOrgAdmin && (
                         <TableCell className="text-right">
@@ -445,6 +466,22 @@ function StudentProfilePage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes" className="font-bold">Notes</Label>
+                <Textarea
+                  id="edit-notes"
+                  type="text"
+                  placeholder="Optional notes..."
+                  value={editingPunch.data.notes}
+                  onChange={(e) =>
+                    setEditingPunch({
+                      ...editingPunch,
+                      data: { ...editingPunch.data, notes: e.target.value },
+                    })
+                  }
+                  className="border-2"
+                />
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -505,6 +542,17 @@ function StudentProfilePage() {
                   <SelectItem value="out">Punch Out</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-notes" className="font-bold">Notes</Label>
+              <Textarea
+                id="add-notes"
+                type="text"
+                placeholder="Optional notes..."
+                value={addFormData.notes}
+                onChange={(e) => setAddFormData({ ...addFormData, notes: e.target.value })}
+                className="border-2"
+              />
             </div>
           </div>
           <DialogFooter>

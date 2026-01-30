@@ -1,5 +1,5 @@
-import { pgTable, serial, varchar, timestamp, integer, unique } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
+import { integer, pgTable, serial, timestamp, unique, varchar } from 'drizzle-orm/pg-core'
 
 // Users table - stores user info and global roles
 export const users = pgTable('users', {
@@ -101,6 +101,7 @@ export const punches = pgTable('punches', {
   userEmail: varchar('user_email', { length: 255 }), // Cached email for admin display
   type: varchar('type', { length: 10 }).notNull(), // 'in' or 'out'
   timestamp: timestamp('timestamp').defaultNow().notNull(),
+  notes: varchar("notes", {length: 255}).notNull().default(""),
 })
 
 export const punchesRelations = relations(punches, ({ one }) => ({

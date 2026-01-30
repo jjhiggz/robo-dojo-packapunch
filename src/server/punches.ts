@@ -760,7 +760,7 @@ export const getUserMonthlyBreakdown = createServerFn({ method: 'POST' })
   })
 
 export const updatePunch = createServerFn({ method: 'POST' })
-  .inputValidator((data: { punchId: number; timestamp: string; type?: 'in' | 'out' }) => data)
+  .inputValidator((data: { punchId: number; timestamp: string; type?: 'in' | 'out'; notes?: string | null }) => data)
   .handler(async ({ data }) => {
     const punchTime = new Date(data.timestamp)
     
@@ -774,6 +774,7 @@ export const updatePunch = createServerFn({ method: 'POST' })
       .set({
         timestamp: punchTime,
         ...(data.type && { type: data.type }),
+        ...(data.notes !== undefined && { notes: data.notes || null }),
       })
       .where(eq(punches.id, data.punchId))
       .returning()
@@ -804,6 +805,7 @@ export const addPunch = createServerFn({ method: 'POST' })
     userEmail?: string
     type: 'in' | 'out'
     timestamp: string
+    notes?: string
   }) => data)
   .handler(async ({ data }) => {
     const punchTime = new Date(data.timestamp)
@@ -822,6 +824,7 @@ export const addPunch = createServerFn({ method: 'POST' })
         userEmail: data.userEmail || null,
         type: data.type,
         timestamp: punchTime,
+        notes: data.notes || null,
       })
       .returning()
 

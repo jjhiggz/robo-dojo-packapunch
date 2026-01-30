@@ -71,6 +71,13 @@
       "when": 1737590400000,
       "tag": "0009_multi-org-boards-migration",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1737752400000,
+      "tag": "0010_add-punch-notes",
+      "breakpoints": true
     }
   ]
 }
