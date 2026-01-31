@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAllUsersStatus, punch } from '@/server/punches'
 import { useBoardContext } from '@/lib/board-context'
+import { PunchConfirmationModal } from './PunchConfirmationModal'
 
 const formatTime = (date: Date | string) => {
   return new Date(date).toLocaleTimeString('en-US', {
@@ -29,14 +31,16 @@ export function PunchControls() {
   })
 
   const punchMutation = useMutation({
-    mutationFn: (type: 'in' | 'out') =>
+    mutationFn: (params: { type: 'in' | 'out'; timestamp?: string; notes?: string }) =>
       punch({
         data: {
           userId: user?.id ?? '',
           boardId: currentBoard!.id,
           userName: user?.fullName || user?.firstName || undefined,
           userEmail: user?.emailAddresses[0]?.emailAddress,
-          type,
+          type: params.type,
+          timestamp: params.timestamp,
+          notes: params.notes,
         },
       }),
     onSuccess: () => {
@@ -53,8 +57,20 @@ export function PunchControls() {
 
   const clockedInCount = usersStatus.filter((u) => u.isClockedIn).length
 
+  const [showModal, setShowModal] = useState(false)
+  const [pendingPunchType, setPendingPunchType] = useState<'in' | 'out'>('in')
+
   const handlePunch = () => {
-    punchMutation.mutate(isClockedIn ? 'out' : 'in')
+    setPendingPunchType(isClockedIn ? 'out' : 'in')
+    setShowModal(true)
+  }
+
+  const handleConfirm = (timestamp: Date, notes: string) => {
+    punchMutation.mutate({
+      type: pendingPunchType,
+      timestamp: timestamp.toISOString(),
+      notes,
+    })
   }
 
   if (isLoading) {
@@ -201,6 +217,21 @@ export function PunchControls() {
           </CardContent>
         )}
       </Card>
+
+      <PunchConfirmationModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        punchType={pendingPunchType}
+        lastPunch={
+          currentUserStatus
+            ? {
+                type: currentUserStatus.isClockedIn ? 'in' : 'out',
+                timestamp: currentUserStatus.lastPunchTime,
+              }
+            : null
+        }
+        onConfirm={handleConfirm}
+      />
     </div>
   )
 }
