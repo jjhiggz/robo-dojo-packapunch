@@ -445,14 +445,23 @@ export const getPunchStatus = createServerFn({ method: 'POST' })
   })
 
 export const punch = createServerFn({ method: 'POST' })
-  .inputValidator((data: { 
+  .inputValidator((data: {
     userId: string
     boardId: number
     userName?: string
     userEmail?: string
     type: 'in' | 'out'
+    timestamp?: string
+    notes?: string
   }) => data)
   .handler(async ({ data }) => {
+    const punchTime = data.timestamp ? new Date(data.timestamp) : new Date()
+
+    // Prevent future punches
+    if (punchTime > new Date()) {
+      throw new Error('Cannot set punch time in the future')
+    }
+
     const [newPunch] = await db
       .insert(punches)
       .values({
@@ -461,7 +470,8 @@ export const punch = createServerFn({ method: 'POST' })
         userName: data.userName || null,
         userEmail: data.userEmail || null,
         type: data.type,
-        timestamp: new Date(),
+        timestamp: punchTime,
+        notes: data.notes || null,
       })
       .returning()
 
