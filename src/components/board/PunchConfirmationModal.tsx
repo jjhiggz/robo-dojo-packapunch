@@ -46,8 +46,30 @@ export function PunchConfirmationModal({
   }
 
   const handleConfirm = () => {
-    // Validation will be added in next task
     const selectedTime = new Date(time)
+    const now = new Date()
+
+    // Validate: can't be in the future
+    if (selectedTime > now) {
+      setError('Cannot set punch time in the future')
+      return
+    }
+
+    // Validate: must be after last punch
+    if (lastPunch) {
+      const lastPunchTime = new Date(lastPunch.timestamp)
+      if (selectedTime <= lastPunchTime) {
+        const lastPunchTypeText = lastPunch.type === 'in' ? 'in' : 'out'
+        const formattedLastTime = formatTime(lastPunchTime)
+        setError(
+          `Time must be after your last punch ${lastPunchTypeText} at ${formattedLastTime}`
+        )
+        return
+      }
+    }
+
+    // Clear error and confirm
+    setError('')
     onConfirm(selectedTime, notes)
     onClose()
   }
