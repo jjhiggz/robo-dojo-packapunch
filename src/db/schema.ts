@@ -101,7 +101,7 @@ export const punches = pgTable('punches', {
   userEmail: varchar('user_email', { length: 255 }), // Cached email for admin display
   type: varchar('type', { length: 10 }).notNull(), // 'in' or 'out'
   timestamp: timestamp('timestamp').defaultNow().notNull(),
-  notes: varchar("notes", {length: 255}).notNull().default(""),
+  notes: varchar("notes", {length: 255}),
 })
 
 export const punchesRelations = relations(punches, ({ one }) => ({
