@@ -470,7 +470,6 @@ function StudentProfilePage() {
                 <Label htmlFor="edit-notes" className="font-bold">Notes</Label>
                 <Textarea
                   id="edit-notes"
-                  type="text"
                   placeholder="Optional notes..."
                   value={editingPunch.data.notes}
                   onChange={(e) =>
@@ -547,7 +546,6 @@ function StudentProfilePage() {
               <Label htmlFor="add-notes" className="font-bold">Notes</Label>
               <Textarea
                 id="add-notes"
-                type="text"
                 placeholder="Optional notes..."
                 value={addFormData.notes}
                 onChange={(e) => setAddFormData({ ...addFormData, notes: e.target.value })}

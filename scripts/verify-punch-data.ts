@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { desc, isNull, or, and, gte, lte, eq } from 'drizzle-orm'
+import { desc, isNull, eq } from 'drizzle-orm'
 import * as schema from '../src/db/schema'
 
 const requireEnv = (key: string): string => {
@@ -33,14 +33,6 @@ const main = async () => {
   } else {
     console.log(`\nFound scarob org: ${scarobOrg.name} (id: ${scarobOrg.id})`)
   }
-
-  // Get January 2026 and February 2026 date range
-  const janStart = new Date(2026, 0, 1)
-  const febEnd = new Date(2026, 2, 0, 23, 59, 59, 999)
-
-  // Also check 2025 dates in case the data is from last year
-  const jan2025Start = new Date(2025, 0, 1)
-  const feb2025End = new Date(2025, 2, 0, 23, 59, 59, 999)
 
   console.log('\n--- Checking for any NULL userName entries ---')
   const nullNamePunches = await db
