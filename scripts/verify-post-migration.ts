@@ -10,7 +10,7 @@
 import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import * as schema from '../src/db/schema'

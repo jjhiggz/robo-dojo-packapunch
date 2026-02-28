@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getAllUsersMonthlyStats, getAllUsersStatus } from '@/server/punches'
 import { useBoardContext } from '@/lib/board-context'
+
+const formatHoursDecimal = (hours: number) => hours.toFixed(2)
 
 const formatHours = (hours: number) => {
   const h = Math.floor(hours)
@@ -80,6 +82,34 @@ export function MonthlyStatsSection({ editable, currentUserId }: MonthlyStatsSec
     return aName.localeCompare(bName)
   })
 
+  const downloadCSV = () => {
+    if (monthlyStats.length === 0) return
+
+    const headers = ['Name', 'Email', 'Total Hours', 'Days Worked', 'Avg Hours/Day']
+    const rows = sortedStats.map(stat => [
+      stat.userName || 'Unknown',
+      stat.userEmail || '',
+      formatHoursDecimal(stat.totalHours),
+      stat.daysWorked.toString(),
+      formatHoursDecimal(stat.avgHoursPerDay),
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${currentBoard?.name || 'board'}-${formatMonth(selectedMonth).replace(' ', '-')}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3 space-y-3">
@@ -101,9 +131,22 @@ export function MonthlyStatsSection({ editable, currentUserId }: MonthlyStatsSec
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-center font-medium">
-          {editable ? 'Tap a member for details' : 'Monthly hours summary'}
-        </p>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-xs text-muted-foreground font-medium">
+            {editable ? 'Tap a member for details' : 'Monthly hours summary'}
+          </p>
+          {monthlyStats.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs gap-1"
+              onClick={downloadCSV}
+            >
+              <Download className="w-3 h-3" />
+              CSV
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
         {statsLoading ? (
