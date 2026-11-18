@@ -1,8 +1,8 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { AlertCircle, ArrowLeft, Edit, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { AlertCircle, ArrowLeft, Download, Edit, Plus, Trash2 } from 'lucide-react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -32,6 +32,12 @@ import {
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { useBoardContext } from '@/lib/board-context'
+import {
+  buildStudentPunchCsv,
+  calculateOutPunchDurations,
+  filterPunchesFromDate,
+  getStudentPunchCsvFilename,
+} from '@/lib/student-punch-csv'
 import { addPunch, deletePunch, getPunchHistory, updatePunch } from '@/server/punches'
 
 export const Route = createFileRoute('/students/$userId')({
@@ -69,30 +75,6 @@ const formatDuration = (hours: number): string => {
   return `${h}h ${m}m`
 }
 
-// Creates a map of out punch ID -> hours accumulated from the previous in punch
-const calculateOutPunchDurations = (punchList: Array<{ id: number; type: string; timestamp: Date | string }>) => {
-  // Sort by timestamp ascending (oldest first) to find in/out pairs
-  const sorted = [...punchList].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  )
-  
-  const durationMap = new Map<number, number>()
-  let lastInTime: Date | null = null
-  
-  for (const punch of sorted) {
-    if (punch.type === 'in') {
-      lastInTime = new Date(punch.timestamp)
-    } else if (punch.type === 'out' && lastInTime) {
-      const outTime = new Date(punch.timestamp)
-      const durationHours = (outTime.getTime() - lastInTime.getTime()) / (1000 * 60 * 60)
-      durationMap.set(punch.id, durationHours)
-      lastInTime = null // Reset after pairing
-    }
-  }
-  
-  return durationMap
-}
-
 interface PunchFormData {
   date: string
   time: string
@@ -109,6 +91,11 @@ function StudentProfilePage() {
 
   const [editingPunch, setEditingPunch] = useState<{ id: number; data: PunchFormData } | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportRange, setExportRange] = useState<'all' | 'from-date'>('all')
+  const [exportStartDate, setExportStartDate] = useState(getTodayLocalDate())
+  const exportRangeId = useId()
+  const exportStartDateId = useId()
   const [addFormData, setAddFormData] = useState<PunchFormData>({
     date: getTodayLocalDate(),
     time: getCurrentLocalTime(),
@@ -225,6 +212,35 @@ function StudentProfilePage() {
     })
   }
 
+  const hasValidExportRange = exportRange === 'all' || Boolean(exportStartDate)
+  const selectedExportStartDate = exportRange === 'from-date' ? exportStartDate : undefined
+  const exportPunchCount = hasValidExportRange
+    ? filterPunchesFromDate(punches, selectedExportStartDate).length
+    : 0
+
+  const handleExport = () => {
+    if (!currentBoard || exportPunchCount === 0) return
+
+    const studentName = studentInfo.userName || 'Member'
+    const csvContent = buildStudentPunchCsv({
+      punches,
+      studentName,
+      studentEmail: studentInfo.userEmail || '',
+      boardName: currentBoard.name,
+      startDate: selectedExportStartDate,
+    })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = getStudentPunchCsvFilename(studentName, selectedExportStartDate)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setExportDialogOpen(false)
+  }
+
   if (!isLoaded || boardLoading) {
     return (
       <div className="min-h-[calc(100vh-80px)] p-4 max-w-6xl mx-auto flex items-center justify-center">
@@ -284,7 +300,7 @@ function StudentProfilePage() {
   return (
     <div className="min-h-[calc(100vh-80px)] p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/board">
             <ArrowLeft className="w-5 h-5" />
@@ -298,12 +314,23 @@ function StudentProfilePage() {
             {currentBoard.name} - {studentInfo.userEmail || userId}
           </p>
         </div>
-        {isOrgAdmin && (
-          <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Punch
+        <div className="flex flex-wrap gap-2 ml-auto">
+          <Button
+            variant="outline"
+            onClick={() => setExportDialogOpen(true)}
+            disabled={punchesLoading || punches.length === 0}
+            className="gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
           </Button>
-        )}
+          {isOrgAdmin && (
+            <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Punch
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Punches Table */}
@@ -404,6 +431,62 @@ function StudentProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Export CSV Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-extrabold uppercase">Export Punch History</DialogTitle>
+            <DialogDescription className="font-medium">
+              Download this member&apos;s punch history as a CSV file.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor={exportRangeId} className="font-bold">Time Range</Label>
+              <Select
+                value={exportRange}
+                onValueChange={(value: 'all' | 'from-date') => setExportRange(value)}
+              >
+                <SelectTrigger id={exportRangeId} className="border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="from-date">Starting from a date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {exportRange === 'from-date' && (
+              <div className="space-y-2">
+                <Label htmlFor={exportStartDateId} className="font-bold">Starting Date</Label>
+                <Input
+                  id={exportStartDateId}
+                  type="date"
+                  value={exportStartDate}
+                  max={getTodayLocalDate()}
+                  onChange={(event) => setExportStartDate(event.target.value)}
+                  className="border-2"
+                />
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground font-medium">
+              {exportPunchCount === 1
+                ? '1 punch will be included.'
+                : `${exportPunchCount} punches will be included.`}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExport} disabled={exportPunchCount === 0}>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Punch Dialog */}
       <Dialog open={!!editingPunch} onOpenChange={() => setEditingPunch(null)}>
